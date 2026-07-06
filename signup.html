@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QRZIP Signup</title>
+  <link rel="stylesheet" href="./portal.css" />
+</head>
+<body data-page="signup">
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">QRZIP<small>สมัครสมาชิกเพื่อสร้าง QR สั้นสุด</small></div>
+      <div class="nav">
+        <a href="./index.html">หน้าบ้าน</a>
+        <a href="./signup.html">สมัครสมาชิก</a>
+        <a href="./member.html">สมาชิก</a>
+        <a href="./admin.html">แอดมิน</a>
+        <a href="./lab.html">แลบวิจัย</a>
+      </div>
+    </div>
+
+    <section class="hero">
+      <h1>สมัครสมาชิก</h1>
+      <p>เดโมนี้ให้สมาชิกมีสิทธิ์สร้าง QR แบบ ref ที่สั้นมากโดยหลังบ้านเก็บข้อความไว้ ส่วนผู้สแกนไม่จำเป็นต้องมีบัญชีก็อ่านได้</p>
+    </section>
+
+    <div class="two-col">
+      <section class="card">
+        <h2>ฟอร์มสมัคร</h2>
+        <div class="field-grid">
+          <input id="signupName" placeholder="ชื่อ" />
+          <input id="signupEmail" placeholder="อีเมล" />
+          <select id="signupPlan">
+            <option value="member">Member</option>
+            <option value="pro">Pro</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button id="signupBtn" class="primary">สมัครสมาชิก</button>
+          <a class="btn" href="./member.html">ไปหน้าสมาชิก</a>
+        </div>
+        <div id="signupStatus" class="status">ยังไม่ได้สมัคร</div>
+      </section>
+
+      <section class="card">
+        <h2>สถานะ</h2>
+        <div id="signupState" class="status">กำลังตรวจสอบ</div>
+        <pre id="signupResult">ยังไม่มีข้อมูล</pre>
+      </section>
+    </div>
+  </div>
+  <script src="./portal.js"></script>
+</body>
+</html>

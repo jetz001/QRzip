@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QRZIP Front</title>
+  <link rel="stylesheet" href="./portal.css" />
+</head>
+<body data-page="home">
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">QRZIP<small>หน้าบ้านสำหรับ Free 1 QR และ Member 1 QR สั้นสุด</small></div>
+      <div class="nav">
+        <a href="./index.html">หน้าบ้าน</a>
+        <a href="./signup.html">สมัครสมาชิก</a>
+        <a href="./member.html">สมาชิก</a>
+        <a href="./admin.html">แอดมิน</a>
+        <a href="./lab.html">แลบวิจัย</a>
+      </div>
+    </div>
+
+    <section class="hero">
+      <h1>ฟรี 1 QR และ สมาชิก 1 QR สั้นสุด</h1>
+      <p>โหมดฟรีจะพยายามสร้าง QR เพียง 1 ใบเท่านั้น ถ้าข้อความยาวเกิน ระบบจะแนะนำให้ใช้โหมดสมาชิกที่เก็บข้อมูลไว้หลังบ้านเพื่อให้ได้ QR สั้นและสแกนง่ายกว่า</p>
+    </section>
+
+    <div class="grid">
+      <section class="card span-7">
+        <h2>สร้าง Free QR</h2>
+        <p class="muted">โหมดฟรีเน้นใช้งานง่าย สร้างได้เฉพาะ QR เดียว ถ้าข้อความยาวเกินจะไม่ฝืนแตกหลาย QR ในหน้าผู้ใช้ทั่วไป</p>
+        <div class="field-grid">
+          <textarea id="homeText" placeholder="วางข้อความแล้วกดสร้าง QR"></textarea>
+        </div>
+        <div class="actions">
+          <button id="freeCreateBtn" class="primary">สร้าง Free QR 1 ใบ</button>
+          <a class="btn" href="./lab.html">เข้าแลบวิจัย</a>
+        </div>
+        <div id="freeStatus" class="status">ยังไม่ได้สร้าง</div>
+        <pre id="freePayload">ยังไม่มีข้อมูล</pre>
+      </section>
+
+      <section class="card span-5">
+        <h2>ผลลัพธ์ QR</h2>
+        <div id="freeQr" class="qr-output">ยังไม่มี QR</div>
+      </section>
+
+      <section class="card span-6">
+        <h2>สถานะสมาชิก</h2>
+        <p class="muted">สมาชิกจะได้ QR แบบ ref ที่สั้นมากเพราะระบบเก็บข้อมูลไว้หลังบ้าน ผู้สแกนไม่ต้องสมัครสมาชิกก็เปิดอ่านข้อมูลได้</p>
+        <div class="metric">
+          <div class="label">member state</div>
+          <div class="value" id="memberState" style="font-size:20px">กำลังตรวจสอบ</div>
+        </div>
+        <div class="actions">
+          <a class="btn primary" href="./signup.html">สมัครสมาชิก</a>
+          <a class="btn" href="./member.html">ไปหน้าสมาชิก</a>
+        </div>
+      </section>
+
+      <section class="card span-6">
+        <h2>สแกน/ดึงข้อมูลจาก ref</h2>
+        <p class="muted">สำหรับคนสแกน QR แบบสมาชิก วาง `QZR|&lt;id&gt;` หรือ `id` แล้วดึงข้อความกลับจากหลังบ้านได้ทันที</p>
+        <div class="field-grid">
+          <input id="resolveInput" placeholder="วาง QZR|&lt;id&gt; หรือ &lt;id&gt;" />
+        </div>
+        <div class="actions">
+          <button id="resolveBtn" class="primary">ดึงข้อมูล</button>
+        </div>
+        <div id="resolveStatus" class="status">ยังไม่ได้ดึงข้อมูล</div>
+        <pre id="resolvedText">ยังไม่มีข้อมูล</pre>
+      </section>
+
+      <section class="card span-12">
+        <h2>สแกนกลับจากรูป QR</h2>
+        <p class="muted">ลากรูปมาวางหรือเลือกไฟล์ แล้วระบบจะบอกว่าเป็น QR แบบฟรีหรือสมาชิก พร้อมถอดกลับเป็นข้อความเดิมให้ทันที</p>
+        <div class="two-col">
+          <div>
+            <label id="scanDropzone" class="dropzone">
+              <input id="scanQrFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+              <div>
+                <strong>ลากรูป QR มาวางตรงนี้</strong>
+                หรือคลิกเพื่อเลือกไฟล์จากเครื่อง
+              </div>
+            </label>
+            <div class="actions">
+              <button id="scanPickBtn" class="primary" type="button">เลือกไฟล์รูป QR</button>
+            </div>
+            <div id="scanStatus" class="status">ยังไม่ได้สแกน</div>
+            <div id="scanFreeHint" class="status"></div>
+          </div>
+          <div>
+            <img id="scanPreview" class="scan-preview" alt="QR preview" />
+          </div>
+        </div>
+        <div class="grid" style="margin-top:14px">
+          <div class="span-6">
+            <div class="status">payload ที่อ่านได้</div>
+            <pre id="scanPayload">ยังไม่มีข้อมูล</pre>
+          </div>
+          <div class="span-6">
+            <div class="status">ข้อความที่คลายกลับ</div>
+            <pre id="scanRecovered">ยังไม่มีข้อมูล</pre>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="./portal.js"></script>
+</body>
+</html>

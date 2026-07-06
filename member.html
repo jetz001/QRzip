@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QRZIP Member</title>
+  <link rel="stylesheet" href="./portal.css" />
+</head>
+<body data-page="member">
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">QRZIP<small>โมดูลสมาชิกสำหรับ 1 QR สั้นสุด</small></div>
+      <div class="nav">
+        <a href="./index.html">หน้าบ้าน</a>
+        <a href="./signup.html">สมัครสมาชิก</a>
+        <a href="./member.html">สมาชิก</a>
+        <a href="./admin.html">แอดมิน</a>
+        <a href="./lab.html">แลบวิจัย</a>
+      </div>
+    </div>
+
+    <section class="hero">
+      <h1>สมาชิกสร้าง QR สั้นสุด</h1>
+      <p>หน้าสมาชิกมีเป้าหมายเดียวคือทำให้ได้ QR 1 ใบที่สั้นที่สุด โดยใช้ ref ไปหา data ที่หลังบ้าน ผู้สแกนไม่ต้องสมัครสมาชิกก็อ่านได้</p>
+    </section>
+
+    <div class="grid">
+      <section class="card span-6">
+        <h2>ข้อมูลสมาชิกในเครื่องนี้</h2>
+        <pre id="memberCard">ยังไม่มีข้อมูลสมาชิก</pre>
+      </section>
+
+      <section class="card span-6">
+        <h2>สร้าง Member QR</h2>
+        <textarea id="memberText" placeholder="ใส่ข้อความสำหรับสร้าง QR สมาชิกแบบ 1 ใบสั้นสุด"></textarea>
+        <div class="actions">
+          <button id="memberCreateBtn" class="primary">สร้าง Member QR 1 ใบ</button>
+          <a class="btn" href="./signup.html">สมัคร/เปลี่ยนสมาชิก</a>
+        </div>
+        <div id="memberModeStatus" class="status">ยังไม่ได้สร้าง</div>
+        <pre id="memberPayload">ยังไม่มี payload</pre>
+      </section>
+
+      <section class="card span-5">
+        <h2>QR สมาชิก</h2>
+        <div id="memberQr" class="qr-output">ยังไม่มี QR</div>
+      </section>
+
+      <section class="card span-7">
+        <h2>ทดสอบ resolve ref</h2>
+        <div class="field-grid">
+          <input id="memberResolveInput" placeholder="วาง QZR|&lt;id&gt; หรือ &lt;id&gt;" />
+        </div>
+        <div class="actions">
+          <button id="memberResolveBtn" class="primary">ดึงข้อความ</button>
+        </div>
+        <div id="memberResolveStatus" class="status">ยังไม่ได้ดึงข้อมูล</div>
+        <pre id="memberResolvedText">ยังไม่มีข้อมูล</pre>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="./portal.js"></script>
+</body>
+</html>

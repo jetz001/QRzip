@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QRZIP Admin</title>
+  <link rel="stylesheet" href="./portal.css" />
+</head>
+<body data-page="admin">
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">QRZIP Admin<small>ดูภาพรวมระบบ และเข้าถึงเครื่องมือเชิงลึก</small></div>
+      <div class="nav">
+        <a href="./index.html">หน้าบ้าน</a>
+        <a href="./signup.html">สมัครสมาชิก</a>
+        <a href="./member.html">สมาชิก</a>
+        <a href="./admin.html">แอดมิน</a>
+        <a href="./lab.html">แลบวิจัย</a>
+      </div>
+    </div>
+
+    <section class="hero">
+      <h1>หน้าแอดมิน</h1>
+      <p>หน้านี้ใช้ดูภาพรวมของระบบจริง และเป็นทางเข้าของเครื่องมือเชิงลึก เช่น compression lab, algorithm comparison และงานวิจัยเรื่อง multi-QR/chunk ที่ไม่ควรไปรบกวนหน้าผู้ใช้ทั่วไป</p>
+    </section>
+
+    <div id="adminStatus" class="status"></div>
+
+    <section class="card" style="margin-bottom:18px">
+      <h2>ภาพรวมระบบ</h2>
+      <div class="metrics">
+        <div class="metric"><div class="label">refs ทั้งหมด</div><div class="value" id="metricRefs">0</div></div>
+        <div class="metric"><div class="label">สมาชิกทั้งหมด</div><div class="value" id="metricMembers">0</div></div>
+        <div class="metric"><div class="label">free refs</div><div class="value" id="metricFree">0</div></div>
+        <div class="metric"><div class="label">member refs</div><div class="value" id="metricMemberRefs">0</div></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-bottom:18px">
+      <h2>โมดูล</h2>
+      <div class="module-grid">
+        <div class="module-card">
+          <h3>Front Office</h3>
+          <p>หน้าบ้านสำหรับผู้ใช้ทั่วไป โดยเล่าเรื่องแบบง่ายว่า `ฟรี = 1 QR` และ `สมาชิก = 1 QR สั้นสุด`</p>
+          <a class="btn primary" href="./index.html">เปิดหน้าบ้าน</a>
+        </div>
+        <div class="module-card">
+          <h3>Research Lab</h3>
+          <p>แลบสำหรับงานลึกของ compression engine เช่น Auto Selector, Deflate, LZ Compact, payload tuning และ multi-QR/chunk</p>
+          <a class="btn primary" href="./lab.html">เข้าแลบวิจัย</a>
+        </div>
+        <div class="module-card">
+          <h3>Member Module</h3>
+          <p>หน้าสมาชิกสำหรับสร้าง QR แบบ ref ที่สั้นที่สุด โดยให้ผู้สแกนเปิดอ่านข้อมูลได้ผ่านหลังบ้าน</p>
+          <a class="btn primary" href="./member.html">เปิดโมดูลสมาชิก</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card span-7">
+        <h2>รายการ ref ล่าสุด</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Mode</th>
+              <th>Member</th>
+              <th>ข้อความ</th>
+              <th>เวลา</th>
+            </tr>
+          </thead>
+          <tbody id="refsTable"></tbody>
+        </table>
+      </section>
+
+      <section class="card span-5">
+        <h2>รายการสมาชิก</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>ชื่อ</th>
+              <th>อีเมล</th>
+              <th>แผน</th>
+              <th>เวลา</th>
+            </tr>
+          </thead>
+          <tbody id="membersTable"></tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+  <script src="./portal.js"></script>
+</body>
+</html>

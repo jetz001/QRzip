@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QRZIP Lab</title>
+  <link rel="stylesheet" href="./portal.css" />
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">QRZIP Lab<small>พื้นที่สำหรับ compression engine และงานวิจัยเชิงลึก</small></div>
+      <div class="nav">
+        <a href="./index.html">หน้าบ้าน</a>
+        <a href="./signup.html">สมัครสมาชิก</a>
+        <a href="./member.html">สมาชิก</a>
+        <a href="./admin.html">แอดมิน</a>
+        <a href="./lab.html">แลบวิจัย</a>
+      </div>
+    </div>
+
+    <section class="hero">
+      <h1>แลบวิจัย</h1>
+      <p>หน้านี้เอาไว้ทดลอง compression engine, payload format, algorithm comparison, scanability และ multi-QR/chunk โดยแยกออกจากหน้าผู้ใช้ทั่วไปให้ชัดเจน</p>
+    </section>
+
+    <section class="card" style="margin-bottom:18px">
+      <div class="module-grid">
+        <div class="module-card">
+          <h3>โหมด Free</h3>
+          <p>เน้น self-contained payload, บีบอัดแบบ lossless, compare algorithm และวัดขนาดจริงก่อนสร้าง QR</p>
+        </div>
+        <div class="module-card">
+          <h3>โหมด Member</h3>
+          <p>เน้น ref สั้นมาก โดยให้หลังบ้านเก็บข้อความแล้วคืน id กลับมาเป็น `QZR|...` สำหรับโหมดสมาชิก</p>
+        </div>
+        <div class="module-card">
+          <h3>ผลที่คาดหวัง</h3>
+          <p>ช่วยตัดสินว่าเคสไหนควรใช้ raw, fixed profile, Deflate, LZ compact หรือย้ายไป member/ref mode</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="iframe-shell">
+      <iframe src="./text_compression_demo.html" title="QRZIP Research Lab"></iframe>
+    </section>
+  </div>
+</body>
+</html>

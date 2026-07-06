@@ -1,0 +1,2410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text Compression Demo</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --line: #334155;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --good: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --accent: #38bdf8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
+      color: var(--text);
+    }
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .hero, .panel {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 18px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.24);
+    }
+    .hero {
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+    }
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .panel {
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+    }
+    .muted {
+      color: var(--muted);
+    }
+    textarea, select, button, input {
+      font: inherit;
+    }
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      resize: vertical;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #020617;
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 14px;
+      align-items: center;
+    }
+    select, button {
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #0b1220;
+      color: var(--text);
+      cursor: pointer;
+    }
+    button.primary {
+      background: linear-gradient(135deg, #0369a1, #2563eb);
+      border-color: transparent;
+    }
+    button:hover {
+      filter: brightness(1.06);
+    }
+    .sample-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .sample-buttons button {
+      background: #111827;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .stat {
+      background: #0b1220;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .stat .label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .stat .value {
+      font-size: 22px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+    .result-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .result-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #0b1220;
+    }
+    .result-card.best {
+      border-color: rgba(34, 197, 94, 0.75);
+      box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.28);
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .badge.good { color: var(--good); border-color: rgba(34, 197, 94, 0.5); }
+    .badge.warn { color: var(--warn); border-color: rgba(245, 158, 11, 0.5); }
+    .badge.bad { color: var(--bad); border-color: rgba(239, 68, 68, 0.5); }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #020617;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      color: #cbd5e1;
+      max-height: 200px;
+      overflow: auto;
+      margin: 12px 0 0;
+    }
+    .summary {
+      line-height: 1.7;
+    }
+    .small {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .qr-panel {
+      display: grid;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .qr-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .qr-box {
+      min-height: 220px;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #020617;
+    }
+    .qr-box img,
+    .qr-box canvas {
+      background: white;
+      padding: 12px;
+      border-radius: 12px;
+      max-width: 100%;
+      height: auto;
+    }
+    .qr-multi {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+    .qr-chunk {
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+      align-content: start;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .qr-chunk canvas,
+    .qr-chunk img {
+      width: 100%;
+      max-width: 160px;
+      padding: 8px;
+    }
+    .qr-compare {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+    }
+    .qr-card {
+      background: #0b1220;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .qr-card h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .ref-tools {
+      display: grid;
+      gap: 10px;
+    }
+    .ref-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .ref-row input {
+      flex: 1;
+      min-width: 180px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #020617;
+      color: var(--text);
+    }
+    .payload-meta {
+      display: grid;
+      gap: 8px;
+    }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>เดโมบีบอัดข้อความแบบ Lossless</h1>
+      <p>
+        หน้านี้จะวิเคราะห์สถิติของข้อความก่อน จากนั้นลองบีบอัดด้วย <code>Raw</code>,
+        <code>RLE</code>, <code>Huffman</code> และ <code>LZ78</code> แล้วเลือกผลที่สั้นที่สุดแบบอัตโนมัติ
+        พร้อมตรวจว่าคลายกลับได้ตรงกับข้อความเดิม 100% ประเมินจำนวน <code>token</code> ก่อน-หลัง
+        และมี <code>Auto Selector v2</code> ที่เลือกโปรไฟล์จากสถิติของข้อความก่อนตัดสินจากขนาด payload สำหรับ QR จริง
+      </p>
+    </section>
+
+    <div class="grid">
+      <div>
+        <section class="panel">
+          <h2>ป้อนข้อความ</h2>
+          <textarea id="inputText" placeholder="ลองวางข้อความซ้ำ ๆ หรือยาว ๆ เช่น log, paragraph, code, หรือคำซ้ำหลายครั้ง"></textarea>
+
+          <div class="controls">
+            <select id="modeSelect">
+              <option value="auto">Auto Select</option>
+              <option value="raw">Raw</option>
+              <option value="rle">RLE</option>
+              <option value="huffman">Huffman</option>
+              <option value="fixed_num">Fixed NUM</option>
+              <option value="fixed_en">Fixed EN</option>
+              <option value="fixed_mixed">Fixed MIX</option>
+              <option value="deflate">Deflate Raw</option>
+              <option value="deflate_dict">Deflate + Dict (Auto)</option>
+              <option value="lz_compact">LZ Compact</option>
+              <option value="lz78">LZ78</option>
+            </select>
+            <select id="qrEncodingSelect" title="โหมดการเข้ารหัสข้อมูลลง QR">
+              <option value="byte">QR Byte mode (ลด overhead)</option>
+              <option value="text">QR Text mode (คัดลอกได้)</option>
+            </select>
+            <select id="autoObjectiveSelect" title="เกณฑ์เลือกผลลัพธ์ (โหมด Auto)">
+              <option value="bytes">สั้นสุด (bytes-first)</option>
+              <option value="scan">สแกนง่ายสุด (scanability-first)</option>
+              <option value="density">คุมความหนาแน่น (threshold)</option>
+            </select>
+            <input id="densityThresholdInput" type="number" min="0.6" max="0.95" step="0.01" value="0.82" title="threshold ความหนาแน่น (utilization) เช่น 0.82 = 82%" />
+            <button class="primary" id="runBtn">วิเคราะห์และบีบอัด</button>
+            <button id="clearBtn">ล้าง</button>
+          </div>
+
+          <div class="sample-buttons">
+            <button data-sample="thai">ตัวอย่างข้อความไทย</button>
+            <button data-sample="english">ตัวอย่างข้อความอังกฤษ</button>
+            <button data-sample="repeated">ตัวอย่างซ้ำเยอะ</button>
+            <button data-sample="code">ตัวอย่างโค้ด</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>ผลการเลือกอัตโนมัติ</h2>
+          <div id="autoSummary" class="summary muted">ยังไม่มีข้อมูล</div>
+          <div class="stats" id="topStats"></div>
+        </section>
+      </div>
+
+      <div>
+        <section class="panel">
+          <h2>ผลลัพธ์แต่ละอัลกอริทึม</h2>
+          <div id="resultList" class="result-list"></div>
+        </section>
+
+        <section class="panel">
+          <h2>ข้อความที่คลายกลับ</h2>
+          <div class="small">เอาไว้ตรวจว่า lossless จริงหรือไม่</div>
+          <pre id="decodedView">ยังไม่มีข้อมูล</pre>
+        </section>
+
+        <section class="panel">
+          <h2>QR Code</h2>
+          <div class="small">เทียบ QR จากข้อความตรง ๆ กับ QR จากผลบีบอัดที่ชนะในหน้าเดียว</div>
+          <div class="qr-panel">
+            <div class="qr-actions">
+              <button class="primary" id="generateQrBtn">สร้าง QR เทียบกัน</button>
+              <button id="downloadCompressedQrBtn">ดาวน์โหลดแบบบีบอัด</button>
+              <button id="downloadRawQrBtn">ดาวน์โหลดแบบไม่ย่อ</button>
+              <button id="generateMemberQrBtn">สร้าง QR สมาชิก (สั้นสุด)</button>
+            </div>
+            <div id="qrStatus" class="small">ยังไม่ได้สร้าง QR</div>
+            <div class="qr-compare">
+              <div class="qr-card">
+                <h3>QR แบบไม่ย่อ</h3>
+                <div id="rawQrMeta" class="small">ยังไม่มีข้อมูล</div>
+                <div id="rawQrBox" class="qr-box">ยังไม่มี QR</div>
+              </div>
+              <div class="qr-card">
+                <h3>QR แบบบีบอัด</h3>
+                <div id="compressedQrMeta" class="small">ยังไม่มีข้อมูล</div>
+                <div id="compressedQrBox" class="qr-box">ยังไม่มี QR</div>
+              </div>
+              <div class="qr-card">
+                <h3>QR สมาชิก (ref)</h3>
+                <div class="small">แนวคิด: สมาชิกสร้าง QR สั้นมาก โดยหลังบ้านเก็บข้อมูลไว้</div>
+                <div id="memberQrMeta" class="small">ยังไม่มีข้อมูล</div>
+                <div id="memberQrBox" class="qr-box">ยังไม่มี QR</div>
+                <div class="ref-tools">
+                  <div class="small">ทดลอง resolve ref (สแกนได้แม้ไม่ล็อกอิน ถ้าแอพ/เว็บเรียกหลังบ้านได้)</div>
+                  <div class="ref-row">
+                    <input id="refInput" placeholder="วาง QZR|<id> หรือ <id>" />
+                    <button id="resolveRefBtn">ดึงข้อมูล</button>
+                  </div>
+                  <pre id="refResultView">ยังไม่มีข้อมูล</pre>
+                </div>
+              </div>
+            </div>
+            <div class="payload-meta">
+              <div class="small">แยกให้ชัดว่าอะไรคือข้อมูลจากเอนจิ้น อะไรคือข้อมูลสุดท้ายที่เข้า QR และ decoder ควรรับตัวไหน</div>
+              <pre id="qrPayloadView">ยังไม่มีข้อมูล</pre>
+              <pre id="qrDecodeFlowView">ยังไม่มีข้อมูล</pre>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
+  <script>
+    const inputText = document.getElementById("inputText");
+    const modeSelect = document.getElementById("modeSelect");
+    const qrEncodingSelect = document.getElementById("qrEncodingSelect");
+    const autoObjectiveSelect = document.getElementById("autoObjectiveSelect");
+    const densityThresholdInput = document.getElementById("densityThresholdInput");
+    const runBtn = document.getElementById("runBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const autoSummary = document.getElementById("autoSummary");
+    const topStats = document.getElementById("topStats");
+    const resultList = document.getElementById("resultList");
+    const decodedView = document.getElementById("decodedView");
+    const generateQrBtn = document.getElementById("generateQrBtn");
+    const downloadCompressedQrBtn = document.getElementById("downloadCompressedQrBtn");
+    const downloadRawQrBtn = document.getElementById("downloadRawQrBtn");
+    const generateMemberQrBtn = document.getElementById("generateMemberQrBtn");
+    const qrStatus = document.getElementById("qrStatus");
+    const rawQrMeta = document.getElementById("rawQrMeta");
+    const compressedQrMeta = document.getElementById("compressedQrMeta");
+    const rawQrBox = document.getElementById("rawQrBox");
+    const compressedQrBox = document.getElementById("compressedQrBox");
+    const memberQrMeta = document.getElementById("memberQrMeta");
+    const memberQrBox = document.getElementById("memberQrBox");
+    const refInput = document.getElementById("refInput");
+    const resolveRefBtn = document.getElementById("resolveRefBtn");
+    const refResultView = document.getElementById("refResultView");
+    const qrPayloadView = document.getElementById("qrPayloadView");
+    const qrDecodeFlowView = document.getElementById("qrDecodeFlowView");
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let lastBestResult = null;
+    let lastResults = [];
+    let lastSelectorInfo = null;
+
+    const presetProfiles = {
+      num: {
+        id: "num",
+        label: "Fixed NUM",
+        entries: [
+          ["0123456789", 90],
+          [" -+.,:/|", 18],
+          ["ABCDEFGHIJKLMNOPQRSTUVWXYZ", 4],
+          ["abcdefghijklmnopqrstuvwxyz", 2],
+          ["\n\t", 4]
+        ]
+      },
+      en: {
+        id: "en",
+        label: "Fixed EN",
+        entries: [
+          [" etaoinshrdlu", 90],
+          ["cmfwypvbgkqjxz", 24],
+          ["ETAOINSHRDLU", 28],
+          ["CMFWYPVBGKQJXZ", 8],
+          ["0123456789", 18],
+          [".,:/_-|", 16],
+          ["[](){}", 4],
+          ["\"'&=%?@#", 6],
+          ["\n\t", 4]
+        ]
+      },
+      mixed: {
+        id: "mixed",
+        label: "Fixed MIX",
+        entries: [
+          [" านรเไกมทสยลวคดบปพผฝฟหอฮ", 80],
+          ["ะัาำิีึืุูเแโใไ่้๊๋็์ๆฯ", 30],
+          ["ขฃคฅฆงจฉชซฌญฎฏฐฑฒณตถทธน", 26],
+          ["ศษสฬฤฦ", 18],
+          ["abcdefghijklmnopqrstuvwxyz", 12],
+          ["ABCDEFGHIJKLMNOPQRSTUVWXYZ", 8],
+          ["0123456789", 16],
+          [" .,:/_-|", 14],
+          ["\n\t", 4]
+        ]
+      }
+    };
+
+    function buildWeightedFrequencyMap(entries) {
+      const map = new Map();
+      entries.forEach(([chars, weight]) => {
+        for (const char of chars) {
+          map.set(char, (map.get(char) || 0) + weight);
+        }
+      });
+      return map;
+    }
+
+    const presetFrequencyMaps = Object.fromEntries(
+      Object.entries(presetProfiles).map(([key, profile]) => [key, buildWeightedFrequencyMap(profile.entries)])
+    );
+
+    const presetCharSets = Object.fromEntries(
+      Object.entries(presetFrequencyMaps).map(([key, map]) => [key, new Set(map.keys())])
+    );
+
+    const QR_BYTE_CAPACITY_M = [
+      14, 26, 42, 62, 84, 106, 122, 152, 180, 213,
+      251, 287, 331, 362, 412, 450, 504, 560, 624, 666,
+      711, 779, 857, 911, 997, 1059, 1125, 1190, 1264, 1370,
+      1452, 1538, 1628, 1722, 1809, 1911, 1989, 2099, 2213, 2331
+    ];
+
+    const samples = {
+      thai: `ระบบนี้ออกแบบมาเพื่อทดลองบีบอัดข้อความแบบ lossless โดยจะวิเคราะห์ลักษณะของข้อความก่อน เช่น ความถี่ของตัวอักษร คำที่ซ้ำ และรูปแบบช่วงข้อความที่ปรากฏซ้ำกัน จากนั้นจึงเลือกวิธีบีบอัดที่เหมาะสมที่สุดสำหรับข้อความนั้น ๆ`,
+      english: `This demo analyzes plain text and tries multiple lossless compression methods before selecting the smallest serialized output. It is useful for presenting how adaptive compression can choose a different strategy depending on repetition, symbol distribution, and overall entropy.`,
+      repeated: `ERROR ERROR ERROR ERROR ERROR | USER_LOGIN_OK USER_LOGIN_OK USER_LOGIN_OK | กรุงเทพ กรุงเทพ กรุงเทพ กรุงเทพ กรุงเทพ | 123123123123123123123123`,
+      code: `function compress(text) {\n  const tokens = [];\n  const seen = new Map();\n  for (const ch of text) {\n    if (!seen.has(ch)) seen.set(ch, 0);\n    seen.set(ch, seen.get(ch) + 1);\n  }\n  return tokens;\n}\nfunction decode(tokens) {\n  return tokens.join("");\n}`
+    };
+
+    document.querySelectorAll("[data-sample]").forEach((button) => {
+      button.addEventListener("click", () => {
+        inputText.value = samples[button.dataset.sample];
+        runCompression();
+      });
+    });
+
+    clearBtn.addEventListener("click", () => {
+      inputText.value = "";
+      modeSelect.value = "auto";
+      qrEncodingSelect.value = "byte";
+      autoObjectiveSelect.value = "bytes";
+      densityThresholdInput.value = "0.82";
+      autoSummary.textContent = "ยังไม่มีข้อมูล";
+      topStats.innerHTML = "";
+      resultList.innerHTML = "";
+      decodedView.textContent = "ยังไม่มีข้อมูล";
+      qrStatus.textContent = "ยังไม่ได้สร้าง QR";
+      rawQrMeta.textContent = "ยังไม่มีข้อมูล";
+      compressedQrMeta.textContent = "ยังไม่มีข้อมูล";
+      rawQrBox.textContent = "ยังไม่มี QR";
+      compressedQrBox.textContent = "ยังไม่มี QR";
+      qrPayloadView.textContent = "ยังไม่มีข้อมูล";
+      qrDecodeFlowView.textContent = "ยังไม่มีข้อมูล";
+      lastBestResult = null;
+      lastResults = [];
+    });
+
+    runBtn.addEventListener("click", runCompression);
+    qrEncodingSelect.addEventListener("change", runCompression);
+    autoObjectiveSelect.addEventListener("change", runCompression);
+    densityThresholdInput.addEventListener("change", runCompression);
+    generateQrBtn.addEventListener("click", generateQrCode);
+    downloadCompressedQrBtn.addEventListener("click", () => downloadQrCode(compressedQrBox, "qrzip-compressed.png"));
+    downloadRawQrBtn.addEventListener("click", () => downloadQrCode(rawQrBox, "qrzip-raw.png"));
+    generateMemberQrBtn.addEventListener("click", generateMemberQrCode);
+    resolveRefBtn.addEventListener("click", resolveMemberRef);
+
+    function utf8Bytes(text) {
+      return encoder.encode(text).length;
+    }
+
+    function formatPercent(value) {
+      return `${value.toFixed(2)}%`;
+    }
+
+    function formatBytes(value) {
+      return `${value.toLocaleString()} bytes`;
+    }
+
+    function previewTextBlock(text, limit = 420) {
+      const value = String(text ?? "");
+      if (value.length <= limit) return value;
+      return `${value.slice(0, limit)}\n... truncated ...`;
+    }
+
+    function summarizeEnginePayload(result) {
+      if (!result?.payload) return "ยังไม่มีข้อมูล";
+      if (result.method === "deflate") {
+        return JSON.stringify({
+          data: previewTextBlock(result.payload.data || "", 220),
+          originalBytes: result.payload.originalBytes ?? result.originalBytes
+        }, null, 2);
+      }
+      if (result.method === "deflate_dict") {
+        return JSON.stringify({
+          profile: result.payload.profile,
+          profileName: result.payload.profileName,
+          data: previewTextBlock(result.payload.data || "", 220),
+          originalBytes: result.payload.originalBytes ?? result.originalBytes,
+          tokenBytes: result.payload.tokenBytes
+        }, null, 2);
+      }
+      if (result.method === "lz_compact") {
+        return JSON.stringify({
+          data: previewTextBlock(result.payload.data || "", 220)
+        }, null, 2);
+      }
+      if (result.method?.startsWith("fixed_")) {
+        return JSON.stringify({
+          profile: result.payload.profile,
+          bitLength: result.payload.bitLength,
+          data: previewTextBlock(result.payload.data || "", 220)
+        }, null, 2);
+      }
+      if (result.method === "raw") {
+        return previewTextBlock(result.payload.text || "", 280);
+      }
+      return previewTextBlock(result.serialized || "", 420);
+    }
+
+    function buildPayloadExplanationBlock(title, lines) {
+      return [title, ...lines, ""].join("\n");
+    }
+
+    function toBase64Url(text) {
+      const bytes = encoder.encode(text);
+      let binary = "";
+      bytes.forEach((byte) => {
+        binary += String.fromCharCode(byte);
+      });
+      return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = "";
+      bytes.forEach((byte) => {
+        binary += String.fromCharCode(byte);
+      });
+      return btoa(binary);
+    }
+
+    function bytesToBinaryString(bytes) {
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i] & 0xff);
+      }
+      return binary;
+    }
+
+    function binaryStringToBytes(binary) {
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i) & 0xff;
+      }
+      return bytes;
+    }
+
+    function bytesToBase64Url(bytes) {
+      return toBase64UrlFromBase64(bytesToBase64(bytes));
+    }
+
+    function base64ToBytes(base64) {
+      if (!base64) return new Uint8Array();
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    function toBase64UrlFromBase64(base64) {
+      return base64.replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+    }
+
+    function isAsciiOnly(text) {
+      for (const char of text) {
+        if (char.charCodeAt(0) > 0x7f) return false;
+      }
+      return true;
+    }
+
+    function estimateTokens(text) {
+      if (!text.length) return 0;
+      const bytes = utf8Bytes(text);
+      let asciiChars = 0;
+      for (const char of text) {
+        if (char.charCodeAt(0) <= 0x7f) asciiChars++;
+      }
+      const asciiRatio = asciiChars / text.length;
+      const divisor = asciiRatio > 0.85 ? 4 : asciiRatio > 0.45 ? 3.2 : 2.6;
+      return Math.max(1, Math.ceil(bytes / divisor));
+    }
+
+    function computeEntropy(text) {
+      if (!text.length) return 0;
+      const freq = new Map();
+      for (const char of text) {
+        freq.set(char, (freq.get(char) || 0) + 1);
+      }
+      let entropy = 0;
+      for (const count of freq.values()) {
+        const p = count / text.length;
+        entropy -= p * Math.log2(p);
+      }
+      return entropy;
+    }
+
+    function repeatedWordRatio(text) {
+      const words = text.trim().split(/\s+/).filter(Boolean);
+      if (!words.length) return 0;
+      const counts = new Map();
+      let repeated = 0;
+      for (const word of words) {
+        const next = (counts.get(word) || 0) + 1;
+        counts.set(word, next);
+      }
+      for (const count of counts.values()) {
+        if (count > 1) repeated += count;
+      }
+      return repeated / words.length;
+    }
+
+    function repeatedBigramRatio(text) {
+      if (text.length < 2) return 0;
+      const counts = new Map();
+      for (let i = 0; i < text.length - 1; i++) {
+        const pair = text.slice(i, i + 2);
+        counts.set(pair, (counts.get(pair) || 0) + 1);
+      }
+      let repeated = 0;
+      for (const count of counts.values()) {
+        if (count > 1) repeated += count;
+      }
+      return repeated / Math.max(1, text.length - 1);
+    }
+
+    function longestRun(text) {
+      if (!text.length) return 0;
+      let best = 1;
+      let current = 1;
+      for (let i = 1; i < text.length; i++) {
+        if (text[i] === text[i - 1]) {
+          current += 1;
+          best = Math.max(best, current);
+        } else {
+          current = 1;
+        }
+      }
+      return best;
+    }
+
+    function analyzeText(text) {
+      const uniqueChars = new Set(text).size;
+      const bytes = utf8Bytes(text);
+      let asciiChars = 0;
+      let thaiChars = 0;
+      let digitChars = 0;
+      let whitespaceChars = 0;
+      for (const char of text) {
+        const code = char.charCodeAt(0);
+        if (code <= 0x7f) asciiChars++;
+        if (code >= 0x0e00 && code <= 0x0e7f) thaiChars++;
+        if (char >= "0" && char <= "9") digitChars++;
+        if (/\s/.test(char)) whitespaceChars++;
+      }
+      return {
+        chars: text.length,
+        utf8Bytes: bytes,
+        estimatedTokens: estimateTokens(text),
+        uniqueChars,
+        asciiRatio: text.length ? asciiChars / text.length : 0,
+        thaiRatio: text.length ? thaiChars / text.length : 0,
+        digitRatio: text.length ? digitChars / text.length : 0,
+        whitespaceRatio: text.length ? whitespaceChars / text.length : 0,
+        entropy: computeEntropy(text),
+        repeatedWordRatio: repeatedWordRatio(text),
+        repeatedBigramRatio: repeatedBigramRatio(text),
+        longestRun: longestRun(text)
+      };
+    }
+
+    function serializePayload(payload) {
+      return JSON.stringify(payload);
+    }
+
+    function rawCompress(text) {
+      return { method: "raw", text };
+    }
+
+    function rawDecompress(payload) {
+      return payload.text;
+    }
+
+    function rleCompress(text) {
+      const runs = [];
+      for (let i = 0; i < text.length; i++) {
+        let count = 1;
+        while (i + 1 < text.length && text[i] === text[i + 1]) {
+          count++;
+          i++;
+        }
+        runs.push([count, text[i]]);
+      }
+      return { method: "rle", runs };
+    }
+
+    function rleDecompress(payload) {
+      return payload.runs.map(([count, char]) => char.repeat(count)).join("");
+    }
+
+    function buildHuffmanTree(freqMap) {
+      const nodes = [...freqMap.entries()].map(([char, freq]) => ({ char, freq, left: null, right: null }));
+      if (!nodes.length) return null;
+      if (nodes.length === 1) {
+        return { char: null, freq: nodes[0].freq, left: nodes[0], right: null };
+      }
+      while (nodes.length > 1) {
+        nodes.sort((a, b) => a.freq - b.freq);
+        const left = nodes.shift();
+        const right = nodes.shift();
+        nodes.push({
+          char: null,
+          freq: left.freq + right.freq,
+          left,
+          right
+        });
+      }
+      return nodes[0];
+    }
+
+    function buildCodeMap(node, prefix = "", map = {}) {
+      if (!node) return map;
+      if (node.char !== null) {
+        map[node.char] = prefix || "0";
+        return map;
+      }
+      buildCodeMap(node.left, prefix + "0", map);
+      buildCodeMap(node.right, prefix + "1", map);
+      return map;
+    }
+
+    function bitsToBase64(bits) {
+      if (!bits.length) return { base64: "", bitLength: 0 };
+      const bytes = [];
+      for (let i = 0; i < bits.length; i += 8) {
+        const chunk = bits.slice(i, i + 8).padEnd(8, "0");
+        bytes.push(parseInt(chunk, 2));
+      }
+      let binary = "";
+      bytes.forEach((byte) => {
+        binary += String.fromCharCode(byte);
+      });
+      return { base64: btoa(binary), bitLength: bits.length };
+    }
+
+    function base64ToBits(base64, bitLength) {
+      if (!base64) return "";
+      const binary = atob(base64);
+      let bits = "";
+      for (let i = 0; i < binary.length; i++) {
+        bits += binary.charCodeAt(i).toString(2).padStart(8, "0");
+      }
+      return bits.slice(0, bitLength);
+    }
+
+    function huffmanCompress(text) {
+      const freqMap = new Map();
+      for (const char of text) {
+        freqMap.set(char, (freqMap.get(char) || 0) + 1);
+      }
+      const tree = buildHuffmanTree(freqMap);
+      const codeMap = buildCodeMap(tree);
+      let bits = "";
+      for (const char of text) {
+        bits += codeMap[char];
+      }
+      const packed = bitsToBase64(bits);
+      return {
+        method: "huffman",
+        freq: [...freqMap.entries()],
+        data: packed.base64,
+        bitLength: packed.bitLength
+      };
+    }
+
+    function huffmanDecompress(payload) {
+      const freqMap = new Map(payload.freq);
+      const tree = buildHuffmanTree(freqMap);
+      const bits = base64ToBits(payload.data, payload.bitLength);
+      if (!tree) return "";
+      let output = "";
+      if (tree.char !== null) {
+        const char = tree.char;
+        let total = 0;
+        for (const count of freqMap.values()) total += count;
+        return char.repeat(total);
+      }
+      let node = tree;
+      for (const bit of bits) {
+        node = bit === "0" ? node.left : node.right;
+        if (node && node.char !== null) {
+          output += node.char;
+          node = tree;
+        }
+      }
+      return output;
+    }
+
+    function supportsPresetProfile(text, profileId) {
+      const charset = presetCharSets[profileId];
+      if (!charset) return false;
+      for (const char of text) {
+        if (!charset.has(char)) return false;
+      }
+      return true;
+    }
+
+    function fixedHuffmanCompress(text, profileId) {
+      if (!supportsPresetProfile(text, profileId)) {
+        throw new Error(`Text contains unsupported characters for ${profileId}`);
+      }
+      const tree = buildHuffmanTree(presetFrequencyMaps[profileId]);
+      const codeMap = buildCodeMap(tree);
+      let bits = "";
+      for (const char of text) {
+        bits += codeMap[char];
+      }
+      const packed = bitsToBase64(bits);
+      return {
+        method: `fixed_${profileId}`,
+        profile: profileId,
+        data: packed.base64,
+        bitLength: packed.bitLength
+      };
+    }
+
+    function fixedHuffmanDecompress(payload) {
+      const tree = buildHuffmanTree(presetFrequencyMaps[payload.profile]);
+      const bits = base64ToBits(payload.data, payload.bitLength);
+      if (!tree) return "";
+      let output = "";
+      let node = tree;
+      for (const bit of bits) {
+        node = bit === "0" ? node.left : node.right;
+        if (node && node.char !== null) {
+          output += node.char;
+          node = tree;
+        }
+      }
+      return output;
+    }
+
+    function estimateQrVersion(bytes) {
+      for (let i = 0; i < QR_BYTE_CAPACITY_M.length; i++) {
+        if (bytes <= QR_BYTE_CAPACITY_M[i]) return i + 1;
+      }
+      return null;
+    }
+
+    function getQrCapacity(version) {
+      if (!version) return 0;
+      if (version < 1) return 0;
+      if (version > QR_BYTE_CAPACITY_M.length) return 0;
+      return QR_BYTE_CAPACITY_M[version - 1] || 0;
+    }
+
+    function buildScanability(bytes) {
+      const version = estimateQrVersion(bytes);
+      if (version === null) {
+        return {
+          version: null,
+          capacity: 0,
+          utilization: 1,
+          score: 5,
+          label: "เกิน 1 QR",
+          recommendation: "ควรใช้ Member QR",
+          freeReady: false
+        };
+      }
+
+      const capacity = getQrCapacity(version);
+      const utilization = capacity ? bytes / capacity : 1;
+
+      // สร้างคะแนนจาก "version" + "ความแน่นจริง" (utilization)
+      // หลักคิด: ใกล้เต็ม 1 ใบจะสแกนยากขึ้นเร็วมาก แม้ยังไม่เกินความจุ
+      let score = 100;
+      score -= Math.max(0, version - 1) * 2.2;
+      if (utilization > 0.55) score -= (utilization - 0.55) * 38;
+      if (utilization > 0.70) score -= (utilization - 0.70) * 70;
+      if (utilization > 0.82) score -= (utilization - 0.82) * 140;
+      score = Math.max(8, Math.min(98, Math.round(score)));
+
+      let label = "โล่ง";
+      let recommendation = "เหมาะกับ Free 1 QR";
+      let freeReady = utilization <= 0.82 && score >= 60;
+
+      if (utilization > 0.55) label = "ดี";
+      if (utilization > 0.70) label = "พอใช้";
+      if (utilization > 0.82) label = "เริ่มแน่น";
+      if (utilization > 0.90) label = "แน่นมาก";
+
+      if (utilization > 0.82 || score < 60) {
+        recommendation = "ควรพิจารณา Member QR";
+        freeReady = false;
+      }
+      if (utilization > 0.90 || score < 45) {
+        recommendation = "แนะนำ Member QR";
+        freeReady = false;
+      }
+
+      return { version, capacity, utilization, score, label, recommendation, freeReady };
+    }
+
+    function lz78Compress(text) {
+      const dictionary = new Map();
+      const tokens = [];
+      let current = "";
+      let nextIndex = 1;
+      for (const char of text) {
+        const combined = current + char;
+        if (dictionary.has(combined)) {
+          current = combined;
+        } else {
+          const prefixIndex = current ? dictionary.get(current) : 0;
+          tokens.push([prefixIndex, char]);
+          dictionary.set(combined, nextIndex++);
+          current = "";
+        }
+      }
+      if (current) {
+        const prefix = current.slice(0, -1);
+        const lastChar = current.slice(-1);
+        tokens.push([prefix ? dictionary.get(prefix) : 0, lastChar]);
+      }
+      return { method: "lz78", tokens };
+    }
+
+    function lz78Decompress(payload) {
+      const dictionary = [""];
+      let output = "";
+      for (const [index, char] of payload.tokens) {
+        const entry = (dictionary[index] || "") + char;
+        output += entry;
+        dictionary.push(entry);
+      }
+      return output;
+    }
+
+    function lzCompactCompress(text) {
+      const input = encoder.encode(text);
+      const output = [];
+      const maxWindow = 4095;
+      const maxLength = 18;
+      let position = 0;
+
+      while (position < input.length) {
+        const flagIndex = output.length;
+        output.push(0);
+        let flags = 0;
+
+        for (let bit = 0; bit < 8 && position < input.length; bit++) {
+          let bestLength = 0;
+          let bestOffset = 0;
+          const windowStart = Math.max(0, position - maxWindow);
+
+          for (let scan = position - 1; scan >= windowStart; scan--) {
+            let matchLength = 0;
+            while (
+              matchLength < maxLength &&
+              position + matchLength < input.length &&
+              input[scan + matchLength] === input[position + matchLength]
+            ) {
+              matchLength++;
+            }
+            if (matchLength > bestLength && matchLength >= 3) {
+              bestLength = matchLength;
+              bestOffset = position - scan;
+              if (matchLength === maxLength) break;
+            }
+          }
+
+          if (bestLength >= 3) {
+            const pair = ((bestOffset - 1) << 4) | (bestLength - 3);
+            output.push((pair >> 8) & 0xff);
+            output.push(pair & 0xff);
+            position += bestLength;
+          } else {
+            flags |= (1 << bit);
+            output.push(input[position]);
+            position++;
+          }
+        }
+
+        output[flagIndex] = flags;
+      }
+
+      return {
+        method: "lz_compact",
+        data: bytesToBase64(Uint8Array.from(output))
+      };
+    }
+
+    function lzCompactDecompress(payload) {
+      const input = base64ToBytes(payload.data);
+      const output = [];
+      let position = 0;
+
+      while (position < input.length) {
+        const flags = input[position++];
+        for (let bit = 0; bit < 8 && position < input.length; bit++) {
+          const isLiteral = ((flags >> bit) & 1) === 1;
+          if (isLiteral) {
+            output.push(input[position++]);
+          } else {
+            if (position + 1 >= input.length) break;
+            const pair = (input[position] << 8) | input[position + 1];
+            position += 2;
+            const offset = (pair >> 4) + 1;
+            const length = (pair & 0x0f) + 3;
+            const start = output.length - offset;
+            for (let i = 0; i < length; i++) {
+              output.push(output[start + i]);
+            }
+          }
+        }
+      }
+
+      return decoder.decode(Uint8Array.from(output));
+    }
+
+    function deflateCompress(text) {
+      if (typeof pako === "undefined") {
+        throw new Error("pako_not_loaded");
+      }
+      const input = encoder.encode(text);
+      const compressed = pako.deflateRaw(input, { level: 9 });
+      return {
+        method: "deflate",
+        data: bytesToBase64(compressed),
+        originalBytes: input.length
+      };
+    }
+
+    function deflateDecompress(payload) {
+      if (typeof pako === "undefined") {
+        throw new Error("pako_not_loaded");
+      }
+      const input = base64ToBytes(payload.data);
+      const restored = pako.inflateRaw(input);
+      return decoder.decode(restored);
+    }
+
+    // Dict profiles: static dictionary (implicit preset)
+    // เป้าหมาย: ย่อ "data bytes" ให้สั้นลงจริง โดยไม่ต้องส่ง dict ไปกับ QR (decoder รู้ชุดเดียวกัน)
+    const DICT_PROFILES = [
+      {
+        id: 1,
+        name: "log",
+        entries: [
+          "ERROR",
+          "USER_LOGIN_OK",
+          "กรุงเทพ",
+          " | ",
+          " |",
+          "| ",
+          "HTTP",
+          "GET ",
+          "POST ",
+          "SELECT ",
+          "INSERT ",
+          "UPDATE ",
+          "DELETE ",
+          "\"",
+          ": ",
+          ", ",
+          "\n"
+        ]
+      },
+      {
+        id: 2,
+        name: "thai_ui",
+        entries: [
+          "ข้อความนี้",
+          "ผลลัพธ์",
+          "บีบอัด",
+          "สแกนง่าย",
+          "สแกนยาก",
+          "ความหนาแน่น",
+          "เกณฑ์ตัดสิน",
+          "เลือก",
+          "ชนะ",
+          "เดิม",
+          "หลัง",
+          "ประมาณ",
+          "คะแนน",
+          "แน่น",
+          "QR version",
+          "scanability",
+          "payload",
+          "bytes",
+          "token",
+          "Member QR",
+          "Auto Selector",
+          " | ",
+          ": ",
+          ", ",
+          "\n"
+        ]
+      },
+      {
+        id: 3,
+        name: "thai_common",
+        entries: [
+          // คำไทยที่พบบ่อย (เน้นให้ match ได้บ่อยในข้อความยาว)
+          "การ",
+          "ความ",
+          "ที่",
+          "และ",
+          "ของ",
+          "เป็น",
+          "ใน",
+          "ไม่",
+          "ได้",
+          "ให้",
+          "เพื่อ",
+          "จาก",
+          "กับ",
+          "จะ",
+          "มี",
+          "หรือ",
+          "ซึ่ง",
+          "โดย",
+          "แล้ว",
+          "ว่า",
+          "กัน",
+          "ทำ",
+          "ต้อง",
+          "ควร",
+          "สามารถ",
+          "มาก",
+          "น้อย",
+          "ที่สุด",
+          "อย่าง",
+          "เมื่อ",
+          "ถ้า",
+          "แต่",
+          "เพราะ",
+          "ดังนั้น",
+          "รวมถึง",
+          "สำหรับ",
+          "ระหว่าง",
+          "ภายใน",
+          "ภายนอก",
+          "ระบบ",
+          "ข้อมูล",
+          "ข้อความ",
+          "สแกน",
+          "บีบอัด",
+          "ขนาด",
+          "ประมาณ",
+          // ตัวคั่นที่เจอบ่อย
+          " ",
+          "  ",
+          ". ",
+          ", ",
+          ": ",
+          " | ",
+          "\n"
+        ]
+      },
+      {
+        id: 4,
+        name: "eng_common",
+        entries: [
+          // English common + dev/log shapes
+          " the ",
+          " and ",
+          " to ",
+          " of ",
+          " in ",
+          " for ",
+          " with ",
+          " is ",
+          " are ",
+          " was ",
+          " were ",
+          " this ",
+          " that ",
+          " you ",
+          " we ",
+          " I ",
+          " not ",
+          " can ",
+          " should ",
+          " payload ",
+          " bytes ",
+          " token ",
+          " scanability ",
+          " version ",
+          " error",
+          " ERROR",
+          " OK",
+          " HTTP",
+          " GET ",
+          " POST ",
+          " PUT ",
+          " DELETE ",
+          " https://",
+          " http://",
+          "Content-Type: ",
+          "application/json",
+          "Authorization: Bearer ",
+          "\"id\":",
+          "\"name\":",
+          "\"status\":",
+          "\"message\":",
+          ", ",
+          ": ",
+          "\n"
+        ]
+      },
+      {
+        id: 5,
+        name: "eng_prose",
+        entries: [
+          " the ",
+          " and ",
+          "ing ",
+          "ion ",
+          "tion",
+          "ment",
+          "ness",
+          "ly ",
+          "ed ",
+          "er ",
+          "al ",
+          "re ",
+          "This ",
+          "This demo ",
+          "compression ",
+          "compressed ",
+          "decompressed ",
+          "lossless ",
+          "payload ",
+          "result ",
+          "results ",
+          "before ",
+          "after ",
+          "selecting ",
+          "methods ",
+          "multiple ",
+          "plain text ",
+          "text ",
+          "bytes ",
+          "version ",
+          "scanability ",
+          "should ",
+          "could ",
+          "would ",
+          "because ",
+          "therefore ",
+          "between ",
+          "within ",
+          "without ",
+          "more ",
+          "less ",
+          " than ",
+          " from ",
+          " with ",
+          ". ",
+          ", ",
+          ": ",
+          "\n"
+        ]
+      },
+      {
+        id: 6,
+        name: "json_http",
+        entries: [
+          "{\"",
+          "\"}",
+          "\":[",
+          "\"]",
+          "\":\"",
+          "\",\"",
+          "\", \"",
+          "\"id\":",
+          "\"name\":",
+          "\"type\":",
+          "\"status\":",
+          "\"message\":",
+          "\"data\":",
+          "\"payload\":",
+          "\"result\":",
+          "\"error\":",
+          "\"items\":",
+          "\"createdAt\":",
+          "\"updatedAt\":",
+          "\"userId\":",
+          "\"token\":",
+          "\"accessToken\":",
+          "\"refreshToken\":",
+          "application/json",
+          "Content-Type: ",
+          "Authorization: Bearer ",
+          "Accept: ",
+          "User-Agent: ",
+          "https://",
+          "http://",
+          "/api/",
+          "GET ",
+          "POST ",
+          "PUT ",
+          "PATCH ",
+          "DELETE ",
+          "HTTP/1.1",
+          "HTTP/2",
+          "\r\n",
+          "\n",
+          ", ",
+          ": "
+        ]
+      }
+    ];
+
+    const DICT_PROFILE_BYTES = new Map(
+      DICT_PROFILES.map((p) => [p.id, p.entries.map((s) => encoder.encode(s))])
+    );
+
+    function getDictBytes(profileId) {
+      return DICT_PROFILE_BYTES.get(profileId) || null;
+    }
+
+    function dictEncodeBytes(profileId, utf8Bytes) {
+      // Escape scheme:
+      // - 0x00 0x00 => literal 0x00
+      // - 0x00 id   => dictionary token id (1..DICT.length)
+      const dictBytes = getDictBytes(profileId);
+      if (!dictBytes) throw new Error("unknown_dict_profile");
+      const out = [];
+      let i = 0;
+      while (i < utf8Bytes.length) {
+        let bestId = 0;
+        let bestLen = 0;
+        // greedy longest-match
+        for (let id = 1; id <= dictBytes.length; id++) {
+          const dict = dictBytes[id - 1];
+          const len = dict.length;
+          if (len < 3) continue; // กัน overhead ถ้าสั้นเกิน
+          if (i + len > utf8Bytes.length) continue;
+          let ok = true;
+          for (let k = 0; k < len; k++) {
+            if (utf8Bytes[i + k] !== dict[k]) { ok = false; break; }
+          }
+          if (ok && len > bestLen) {
+            bestLen = len;
+            bestId = id;
+          }
+        }
+
+        if (bestId && bestLen) {
+          out.push(0x00, bestId & 0xff);
+          i += bestLen;
+          continue;
+        }
+
+        const b = utf8Bytes[i];
+        if (b === 0x00) out.push(0x00, 0x00);
+        else out.push(b);
+        i += 1;
+      }
+      return Uint8Array.from(out);
+    }
+
+    function dictDecodeBytes(profileId, tokenBytes) {
+      const dictBytes = getDictBytes(profileId);
+      if (!dictBytes) throw new Error("unknown_dict_profile");
+      const out = [];
+      for (let i = 0; i < tokenBytes.length; i++) {
+        const b = tokenBytes[i];
+        if (b !== 0x00) {
+          out.push(b);
+          continue;
+        }
+        if (i + 1 >= tokenBytes.length) break;
+        const code = tokenBytes[++i];
+        if (code === 0x00) {
+          out.push(0x00);
+          continue;
+        }
+        const dict = dictBytes[code - 1];
+        if (dict) {
+          for (const db of dict) out.push(db);
+        }
+      }
+      return Uint8Array.from(out);
+    }
+
+    function deflateDictCompress(text) {
+      if (typeof pako === "undefined") {
+        throw new Error("pako_not_loaded");
+      }
+      const input = encoder.encode(text);
+      let best = null;
+      for (const profile of DICT_PROFILES) {
+        const tokenBytes = dictEncodeBytes(profile.id, input);
+        const compressed = pako.deflateRaw(tokenBytes, { level: 9 });
+        const record = {
+          profile: profile.id,
+          profileName: profile.name,
+          data: bytesToBase64(compressed),
+          tokenBytes: tokenBytes.length,
+          compressedBytes: compressed.length
+        };
+        if (!best || record.compressedBytes < best.compressedBytes) best = record;
+      }
+      if (!best) throw new Error("dict_profiles_empty");
+      return {
+        method: "deflate_dict",
+        profile: best.profile,
+        profileName: best.profileName,
+        data: best.data,
+        originalBytes: input.length,
+        tokenBytes: best.tokenBytes
+      };
+    }
+
+    function deflateDictDecompress(payload) {
+      if (typeof pako === "undefined") {
+        throw new Error("pako_not_loaded");
+      }
+      const input = base64ToBytes(payload.data);
+      const restored = pako.inflateRaw(input);
+      const profileId = payload.profile ?? 1;
+      const utf8 = dictDecodeBytes(profileId, restored);
+      return decoder.decode(utf8);
+    }
+
+    const compressors = {
+      raw: { compress: rawCompress, decompress: rawDecompress, label: "Raw" },
+      rle: { compress: rleCompress, decompress: rleDecompress, label: "RLE" },
+      huffman: { compress: huffmanCompress, decompress: huffmanDecompress, label: "Huffman" },
+      fixed_num: {
+        compress: (text) => fixedHuffmanCompress(text, "num"),
+        decompress: fixedHuffmanDecompress,
+        label: "Fixed NUM"
+      },
+      fixed_en: {
+        compress: (text) => fixedHuffmanCompress(text, "en"),
+        decompress: fixedHuffmanDecompress,
+        label: "Fixed EN"
+      },
+      fixed_mixed: {
+        compress: (text) => fixedHuffmanCompress(text, "mixed"),
+        decompress: fixedHuffmanDecompress,
+        label: "Fixed MIX"
+      },
+      deflate: {
+        compress: deflateCompress,
+        decompress: deflateDecompress,
+        label: "Deflate Raw"
+      },
+      deflate_dict: {
+        compress: deflateDictCompress,
+        decompress: deflateDictDecompress,
+        label: "Deflate + Dict (Auto)"
+      },
+      lz_compact: {
+        compress: lzCompactCompress,
+        decompress: lzCompactDecompress,
+        label: "LZ Compact"
+      },
+      lz78: { compress: lz78Compress, decompress: lz78Decompress, label: "LZ78" }
+    };
+
+    function selectAutoCandidates(stats, text) {
+      const candidates = new Set(["raw"]);
+      const reasons = [];
+
+      reasons.push("เริ่มจาก raw เป็น baseline เสมอ");
+
+      if (stats.utf8Bytes <= 120) {
+        reasons.push("ข้อความค่อนข้างสั้น จึงเผื่อ raw ไว้เพราะ overhead อาจแพงกว่าประโยชน์");
+      }
+
+      if (stats.digitRatio >= 0.55 && supportsPresetProfile(text, "num")) {
+        candidates.add("fixed_num");
+        reasons.push("ตัวเลขเยอะ จึงลอง Fixed NUM");
+      }
+
+      if (stats.asciiRatio >= 0.82 && supportsPresetProfile(text, "en")) {
+        candidates.add("fixed_en");
+        reasons.push("ASCII สูง จึงลอง Fixed EN");
+      }
+
+      if (stats.thaiRatio >= 0.18 && supportsPresetProfile(text, "mixed")) {
+        candidates.add("fixed_mixed");
+        reasons.push("มีอักขระไทยพอสมควร จึงลอง Fixed MIX");
+      }
+
+      if (stats.repeatedWordRatio >= 0.25 || stats.repeatedBigramRatio >= 0.45) {
+        candidates.add("lz_compact");
+        reasons.push("ข้อความมี pattern ซ้ำสูง จึงลอง LZ Compact");
+        candidates.add("lz78");
+        reasons.push("ข้อความมี pattern ซ้ำสูง จึงลอง LZ78");
+      }
+
+      if (stats.utf8Bytes >= 140 || stats.repeatedBigramRatio >= 0.22 || stats.entropy <= 5.2) {
+        candidates.add("deflate");
+        reasons.push("ข้อความยาวพอหรือมีแพตเทิร์นพอสมควร จึงลอง Deflate Raw");
+      }
+
+      if (
+        stats.repeatedWordRatio >= 0.18
+        || stats.repeatedBigramRatio >= 0.35
+        || stats.utf8Bytes >= 320
+        || (stats.asciiRatio >= 0.8 && stats.utf8Bytes >= 220)
+        || (stats.thaiRatio >= 0.22 && stats.utf8Bytes >= 220)
+      ) {
+        candidates.add("deflate_dict");
+        reasons.push("ข้อความยาว/มี pattern พอสมควร จึงลอง Deflate + Dict (Auto profiles)");
+      }
+
+      if (stats.longestRun >= 4) {
+        candidates.add("rle");
+        reasons.push("มีตัวซ้ำติดกันยาว จึงลอง RLE");
+      }
+
+      if (stats.entropy <= 4.7 && stats.uniqueChars <= 90) {
+        candidates.add("huffman");
+        reasons.push("entropy ต่ำและจำนวนตัวอักษรไม่ซ้ำไม่สูงมาก จึงลอง Huffman แบบ dynamic");
+      }
+
+      return {
+        mode: "auto-v2",
+        candidates: [...candidates],
+        reasons
+      };
+    }
+
+    function parseDensityThreshold(value) {
+      const raw = Number(value);
+      if (!Number.isFinite(raw)) return 0.82;
+      return Math.min(0.95, Math.max(0.6, raw));
+    }
+
+    function rankResults(results, objective, densityThreshold) {
+      const list = [...results];
+      const bytesFirst = (a, b) => {
+        const diff = Math.abs(a.finalPayloadBytes - b.finalPayloadBytes);
+        if (diff <= 48 && a.scanability.score !== b.scanability.score) {
+          return b.scanability.score - a.scanability.score;
+        }
+        return a.finalPayloadBytes - b.finalPayloadBytes
+          || b.scanability.score - a.scanability.score
+          || a.serializedBytes - b.serializedBytes;
+      };
+
+      const scanFirst = (a, b) => {
+        return (b.scanability.score - a.scanability.score)
+          || (a.finalPayloadBytes - b.finalPayloadBytes)
+          || (a.serializedBytes - b.serializedBytes);
+      };
+
+      if (objective === "scan") {
+        list.sort(scanFirst);
+        return { ranked: list, used: "scan", threshold: densityThreshold, passedCount: list.length };
+      }
+
+      if (objective === "density") {
+        const passed = list.filter((item) => {
+          if (!item.scanability?.version) return false;
+          if (!Number.isFinite(item.scanability.utilization)) return false;
+          return item.scanability.utilization <= densityThreshold;
+        });
+        if (passed.length) {
+          passed.sort(bytesFirst);
+          const failed = list.filter((item) => !passed.includes(item)).sort(scanFirst);
+          return {
+            ranked: [...passed, ...failed],
+            used: "density",
+            threshold: densityThreshold,
+            passedCount: passed.length
+          };
+        }
+        // ถ้าไม่มีตัวไหนผ่าน threshold เลย ให้ fallback ไปสแกนง่ายสุด
+        list.sort(scanFirst);
+        return { ranked: list, used: "scan_fallback", threshold: densityThreshold, passedCount: 0 };
+      }
+
+      list.sort(bytesFirst);
+      return { ranked: list, used: "bytes", threshold: densityThreshold, passedCount: list.length };
+    }
+
+    function runCompression() {
+      const text = inputText.value;
+      const mode = modeSelect.value;
+      if (!text.length) {
+        autoSummary.textContent = "กรุณาป้อนข้อความก่อน";
+        topStats.innerHTML = "";
+        resultList.innerHTML = "";
+        decodedView.textContent = "ยังไม่มีข้อมูล";
+        return;
+      }
+
+      const objective = autoObjectiveSelect?.value || "bytes";
+      if (densityThresholdInput) {
+        densityThresholdInput.disabled = objective !== "density";
+        densityThresholdInput.style.opacity = objective === "density" ? "1" : "0.55";
+      }
+
+      const stats = analyzeText(text);
+      const selectorInfo = mode === "auto"
+        ? selectAutoCandidates(stats, text)
+        : { mode: "manual", candidates: [mode], reasons: [`เลือก <code>${compressors[mode]?.label || mode}</code> แบบ manual`] };
+      const methods = selectorInfo.candidates;
+      const results = methods
+        .map((method) => evaluateMethod(method, text))
+        .filter(Boolean);
+      if (!results.length) {
+        autoSummary.textContent = "ข้อความนี้ไม่รองรับกับโปรไฟล์ที่เลือก";
+        topStats.innerHTML = "";
+        resultList.innerHTML = "";
+        decodedView.textContent = "ยังไม่มีข้อมูล";
+        qrStatus.textContent = "ยังไม่มีผลบีบอัดให้สร้าง QR";
+        return;
+      }
+      const densityThreshold = parseDensityThreshold(densityThresholdInput?.value);
+      const rankedInfo = rankResults(results, objective, densityThreshold);
+      const rankedResults = rankedInfo.ranked;
+
+      lastResults = rankedResults;
+      lastSelectorInfo = selectorInfo;
+      const best = rankedResults[0];
+      lastBestResult = best;
+      window.__qrzip_lastBest = best;
+      window.__qrzip_lastResults = rankedResults;
+      renderTopStats(stats, best);
+      renderSummary(stats, best, mode, rankedResults, selectorInfo, rankedInfo);
+      renderResults(rankedResults, best.method);
+      decodedView.textContent = best.decoded;
+      qrStatus.textContent = "พร้อมสร้าง QR เปรียบเทียบระหว่างข้อความตรง ๆ และผลบีบอัด";
+      rawQrMeta.textContent = "กดปุ่มสร้าง QR เทียบกัน";
+      compressedQrMeta.textContent = "กดปุ่มสร้าง QR เทียบกัน";
+      rawQrBox.textContent = "ยังไม่มี QR";
+      compressedQrBox.textContent = "ยังไม่มี QR";
+      qrPayloadView.textContent = "กดปุ่มสร้าง QR เทียบกันเพื่อดู payload";
+      qrDecodeFlowView.textContent = "กดปุ่มสร้าง QR เทียบกันเพื่อดูว่า decoder ควรรับข้อมูลตัวไหน";
+      memberQrMeta.textContent = "กดปุ่มสร้าง QR สมาชิก (สั้นสุด)";
+      memberQrBox.textContent = "ยังไม่มี QR";
+      refResultView.textContent = "ยังไม่มีข้อมูล";
+    }
+
+    function evaluateMethod(method, text) {
+      const engine = compressors[method];
+      try {
+        const encodingMode = qrEncodingSelect?.value || "byte";
+        const payload = engine.compress(text);
+        const serialized = serializePayload(payload);
+        const decoded = engine.decompress(payload);
+        const originalBytes = utf8Bytes(text);
+        const serializedBytes = utf8Bytes(serialized);
+        const originalTokens = estimateTokens(text);
+        const serializedTokens = estimateTokens(serialized);
+        const savedBytes = originalBytes - serializedBytes;
+        const savedTokens = originalTokens - serializedTokens;
+        const ratio = originalBytes > 0 ? (serializedBytes / originalBytes) * 100 : 100;
+        const tokenRatio = originalTokens > 0 ? (serializedTokens / originalTokens) * 100 : 100;
+        const carrier = method === "raw"
+          ? buildQrCarrierForRaw(text, encodingMode)
+          : buildQrCarrierForCompressed({ method, payload, serialized }, encodingMode);
+        const finalPayload = carrier.displayText;
+        const finalQrText = carrier.qrText;
+        const finalPayloadBytes = carrier.bytesLen;
+        const scanability = buildScanability(finalPayloadBytes);
+        const ok = decoded === text;
+        return {
+          method,
+          label: engine.label,
+          payload,
+          serialized,
+          decoded,
+          ok,
+          originalBytes,
+          serializedBytes,
+          originalTokens,
+          serializedTokens,
+          savedBytes,
+          savedTokens,
+          ratio,
+          tokenRatio,
+          finalPayload,
+          finalQrText,
+          finalPayloadBytes,
+          scanability
+        };
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function renderTopStats(stats, best) {
+      topStats.innerHTML = "";
+      const items = [
+        ["จำนวนตัวอักษร", stats.chars.toLocaleString()],
+        ["ขนาด UTF-8 เดิม", formatBytes(stats.utf8Bytes)],
+        ["โทเคนเดิมโดยประมาณ", stats.estimatedTokens.toLocaleString()],
+        ["โทเคนหลังบีบอัด", best.serializedTokens.toLocaleString()],
+        ["ลดลงกี่โทเคน", best.savedTokens.toLocaleString()],
+        ["payload เข้า QR", formatBytes(best.finalPayloadBytes)],
+        ["QR version โดยประมาณ", best.scanability.version ? `v${best.scanability.version}` : "> v40"],
+        ["ความแน่นของ QR", best.scanability.capacity ? `${Math.round(best.scanability.utilization * 100)}% ของความจุ (≈ ${best.scanability.capacity.toLocaleString()} bytes)` : "เกิน 1 QR"],
+        ["scanability score", `${best.scanability.score}/100 (${best.scanability.label})`],
+        ["ตัวอักษรไม่ซ้ำ", stats.uniqueChars.toLocaleString()],
+        ["ASCII ratio", formatPercent(stats.asciiRatio * 100)],
+        ["Thai ratio", formatPercent(stats.thaiRatio * 100)],
+        ["Entropy โดยประมาณ", stats.entropy.toFixed(3)],
+        ["คำที่ซ้ำ", formatPercent(stats.repeatedWordRatio * 100)],
+        ["bigram ซ้ำ", formatPercent(stats.repeatedBigramRatio * 100)],
+        ["run ยาวสุด", stats.longestRun.toLocaleString()],
+        ["ตัวที่ชนะ", best.label]
+      ];
+      items.forEach(([label, value]) => {
+        const card = document.createElement("div");
+        card.className = "stat";
+        card.innerHTML = `<div class="label">${label}</div><div class="value">${value}</div>`;
+        topStats.appendChild(card);
+      });
+    }
+
+    function renderSummary(stats, best, mode, results, selectorInfo, rankedInfo) {
+      const repeatedScore = ((stats.repeatedWordRatio + stats.repeatedBigramRatio) / 2) * 100;
+      const selectionNote = mode === "auto"
+        ? `Auto Selector v2 เลือก shortlist จากสถิติ แล้วตัดสินให้ <code>${best.label}</code> ชนะจากผลลัพธ์ที่จัดอันดับแล้ว`
+        : `คุณเลือกใช้ <code>${best.label}</code> โดยตรง`;
+      const compressionNote = best.savedBytes >= 0
+        ? `ลดขนาดได้ประมาณ <strong>${best.savedBytes.toLocaleString()} bytes</strong> หรือเหลือ <strong>${formatPercent(best.ratio)}</strong> ของเดิม`
+        : `ผลลัพธ์ใหญ่ขึ้นประมาณ <strong>${Math.abs(best.savedBytes).toLocaleString()} bytes</strong> ซึ่งเกิดขึ้นได้ใน lossless compression เมื่อข้อความสั้นหรือไม่มี pattern ซ้ำมากพอ`;
+      const tokenNote = best.savedTokens >= 0
+        ? `โทเคนโดยประมาณลดลง <strong>${best.savedTokens.toLocaleString()}</strong> token หรือเหลือ <strong>${formatPercent(best.tokenRatio)}</strong> ของเดิม`
+        : `โทเคนโดยประมาณเพิ่มขึ้น <strong>${Math.abs(best.savedTokens).toLocaleString()}</strong> token ซึ่งมักเกิดจาก metadata และ JSON serialization ของเดโมนี้`;
+      const verifyNote = best.ok
+        ? `<span style="color: var(--good)">คลายกลับตรงกับต้นฉบับ 100%</span>`
+        : `<span style="color: var(--bad)">คลายกลับไม่ตรงกับต้นฉบับ</span>`;
+      const selectorNote = selectorInfo?.reasons?.length
+        ? `เหตุผลที่ลอง: ${selectorInfo.reasons.join(" | ")}`
+        : "";
+      const utilizationText = best.scanability.capacity
+        ? `แน่นประมาณ <strong>${Math.round(best.scanability.utilization * 100)}%</strong> ของความจุ (≈ ${best.scanability.capacity.toLocaleString()} bytes)`
+        : "เกิน 1 QR";
+      const scanabilityNote = `คะแนน scanability ประมาณ <strong>${best.scanability.score}/100</strong> (${best.scanability.label}) | QR version โดยประมาณ <strong>${best.scanability.version ? `v${best.scanability.version}` : "&gt; v40"}</strong> | ${utilizationText}`;
+      const usageDecisionNote = best.scanability.freeReady
+        ? `คำแนะนำการใช้งาน: อยู่ในช่วงที่เหมาะกับ <strong>1 QR</strong>`
+        : `คำแนะนำการใช้งาน: <strong>${best.scanability.recommendation}</strong>`;
+
+      const objectiveLabel = (() => {
+        const used = rankedInfo?.used || "bytes";
+        if (used === "scan") return "สแกนง่ายสุด (scanability-first)";
+        if (used === "density") return `คุมความหนาแน่น (threshold=${(rankedInfo?.threshold ?? 0.82).toFixed(2)})`;
+        if (used === "scan_fallback") return `คุมความหนาแน่นแล้วไม่ผ่าน → fallback สแกนง่ายสุด (threshold=${(rankedInfo?.threshold ?? 0.82).toFixed(2)})`;
+        return "สั้นสุด (bytes-first)";
+      })();
+      const objectiveNote = mode === "auto"
+        ? `เกณฑ์ตัดสิน: <strong>${objectiveLabel}</strong>`
+        : "";
+      const dictProfileNote = best.method === "deflate_dict" && best.payload?.profileName
+        ? `โปรไฟล์ dict ที่เลือก: <strong>${best.payload.profileName}</strong> (id=${best.payload.profile})`
+        : "";
+
+      autoSummary.innerHTML = `
+        ${selectionNote}.<br>
+        ${objectiveNote ? `${objectiveNote}.<br>` : ""}
+        ${dictProfileNote ? `${dictProfileNote}.<br>` : ""}
+        ข้อความนี้มีการซ้ำระดับประมาณ <strong>${repeatedScore.toFixed(2)}%</strong>, entropy ประมาณ <strong>${stats.entropy.toFixed(3)}</strong> bits/char และ ${compressionNote}.<br>
+        payload สำหรับ QR ของตัวที่ชนะมีขนาดประมาณ <strong>${best.finalPayloadBytes.toLocaleString()} bytes</strong>.<br>
+        ${scanabilityNote}.<br>
+        ${usageDecisionNote}.<br>
+        สำหรับการประเมินโทเคน: เดิมประมาณ <strong>${stats.estimatedTokens.toLocaleString()}</strong> token, หลังบีบอัดประมาณ <strong>${best.serializedTokens.toLocaleString()}</strong> token, ${tokenNote}.<br>
+        ${selectorNote ? `${selectorNote}.<br>` : ""}
+        สถานะตรวจสอบ: ${verifyNote}
+      `;
+    }
+
+    function badgeClass(result) {
+      if (!result.ok) return "bad";
+      if (result.savedBytes >= 0) return "good";
+      return "warn";
+    }
+
+    function badgeText(result) {
+      if (!result.ok) return "Decode error";
+      if (result.savedBytes >= 0) return "Lossless OK";
+      return "ใหญ่ขึ้นแต่ถูกต้อง";
+    }
+
+    function renderResults(results, bestMethod) {
+      resultList.innerHTML = "";
+      results.forEach((result) => {
+        const card = document.createElement("div");
+        card.className = `result-card ${result.method === bestMethod ? "best" : ""}`;
+        const deltaText = result.savedBytes >= 0
+          ? `ประหยัด ${result.savedBytes.toLocaleString()} bytes`
+          : `เพิ่ม ${Math.abs(result.savedBytes).toLocaleString()} bytes`;
+        const tokenDeltaText = result.savedTokens >= 0
+          ? `ลด ${result.savedTokens.toLocaleString()} token`
+          : `เพิ่ม ${Math.abs(result.savedTokens).toLocaleString()} token`;
+        card.innerHTML = `
+          <div class="row">
+            <strong>${result.label}</strong>
+            <div class="row">
+              ${result.method === bestMethod ? '<span class="badge good">Best</span>' : ""}
+              <span class="badge ${badgeClass(result)}">${badgeText(result)}</span>
+            </div>
+          </div>
+          <div class="small" style="margin-top: 8px;">
+            เดิม ${formatBytes(result.originalBytes)} | หลัง serialize ${formatBytes(result.serializedBytes)} | ${deltaText} | ratio ${formatPercent(result.ratio)}
+          </div>
+          <div class="small" style="margin-top: 6px;">
+            token เดิมประมาณ ${result.originalTokens.toLocaleString()} | หลัง serialize ${result.serializedTokens.toLocaleString()} | ${tokenDeltaText} | token ratio ${formatPercent(result.tokenRatio)}
+          </div>
+          <div class="small" style="margin-top: 6px;">
+            final QR payload ${formatBytes(result.finalPayloadBytes)}
+          </div>
+          <div class="small" style="margin-top: 6px;">
+            scanability ${result.scanability.score}/100 (${result.scanability.label}) | ${result.scanability.version ? `ประมาณ v${result.scanability.version}` : "เกิน 1 QR"}${result.scanability.capacity ? ` | แน่น ${Math.round(result.scanability.utilization * 100)}%` : ""}
+          </div>
+          <pre>${escapeHtml([
+            `[engine payload / สิ่งที่ compressor คืนกลับ]`,
+            summarizeEnginePayload(result),
+            ``,
+            `[final QR payload / สิ่งที่ระบบห่อให้ก่อนเข้า QR]`,
+            previewTextBlock(result.finalPayload || "", 420)
+          ].join("\n"))}</pre>
+        `;
+        resultList.appendChild(card);
+      });
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    // Compact payload format (no JSON wrapper):
+    // - Raw ASCII text:  QZ1|T|<text>
+    // - Raw non-ASCII:   QZ1|B|<base64url(utf8 text)>
+    // - Fixed Huffman:   QZ1|F|<profile>|<bitLength>|<base64url(bitstream bytes)>
+    // - Deflate Raw:     QZ1|D|<base64url(deflate bytes)>
+    // - Deflate+Dict1:   QZ1|K|1|<base64url(deflate bytes)>
+    // - LZ Compact:      QZ1|L|<base64url(binary token stream)>
+    // Fallback (legacy): QZ1|J|<base64url(json)>
+    //
+    // QR Byte mode (ลด overhead จาก base64/url-safe):
+    // - Raw UTF-8:       "QZ1T" + <utf8 bytes>
+    // - Deflate Raw:     "QZ1D" + <deflate bytes>
+    // - Deflate+Dict1:   "QZ1K" + <profileId:1> + <deflate bytes>
+    // - LZ Compact:      "QZ1L" + <lz token bytes>
+    // - Fixed Huffman:   "QZ1F" + <profileId:1> + <bitLength:uint16> + <bitstream bytes>
+
+    function buildRawQrPayload(text) {
+      if (isAsciiOnly(text)) {
+        return `QZ1|T|${text}`;
+      }
+      return `QZ1|B|${toBase64Url(text)}`;
+    }
+
+    function buildFixedQrPayload(payload) {
+      // payload: { method: 'fixed_en', profile: 'en', data: '<base64>', bitLength: number }
+      const profile = (payload.profile || "").toUpperCase();
+      const bitLength = payload.bitLength ?? 0;
+      const dataB64Url = toBase64UrlFromBase64(payload.data || "");
+      return `QZ1|F|${profile}|${bitLength}|${dataB64Url}`;
+    }
+
+    function buildLzCompactQrPayload(payload) {
+      const dataB64Url = toBase64UrlFromBase64(payload.data || "");
+      return `QZ1|L|${dataB64Url}`;
+    }
+
+    function buildDeflateQrPayload(payload) {
+      const dataB64Url = toBase64UrlFromBase64(payload.data || "");
+      return `QZ1|D|${dataB64Url}`;
+    }
+
+    function buildDeflateDictQrPayload(payload) {
+      const profileId = payload.profile ?? 1;
+      const dataB64Url = toBase64UrlFromBase64(payload.data || "");
+      return `QZ1|K|${profileId}|${dataB64Url}`;
+    }
+
+    function buildBinaryFrameSimple(methodChar, dataBytes) {
+      const header = new Uint8Array([0x51, 0x5a, 0x31, methodChar.charCodeAt(0)]);
+      const out = new Uint8Array(header.length + dataBytes.length);
+      out.set(header, 0);
+      out.set(dataBytes, header.length);
+      return out;
+    }
+
+    function fixedProfileToId(profile) {
+      const p = (profile || "").toLowerCase();
+      if (p === "num") return 1;
+      if (p === "en") return 2;
+      if (p === "mixed") return 3;
+      return 0;
+    }
+
+    function buildFixedBinaryFrame(payload) {
+      const profileId = fixedProfileToId(payload.profile);
+      const bitLength = payload.bitLength ?? 0;
+      const dataBytes = base64ToBytes(payload.data || "");
+      const header = new Uint8Array([
+        0x51, 0x5a, 0x31, 0x46, // QZ1F
+        profileId & 0xff,
+        (bitLength >> 8) & 0xff,
+        bitLength & 0xff
+      ]);
+      const out = new Uint8Array(header.length + dataBytes.length);
+      out.set(header, 0);
+      out.set(dataBytes, header.length);
+      return out;
+    }
+
+    function buildQrCarrierForRaw(text, encodingMode) {
+      const displayText = buildRawQrPayload(text);
+      if (encodingMode !== "byte") {
+        return { qrText: displayText, bytesLen: utf8Bytes(displayText), displayText };
+      }
+      const frame = buildBinaryFrameSimple("T", encoder.encode(text));
+      return { qrText: bytesToBinaryString(frame), bytesLen: frame.length, displayText };
+    }
+
+    function buildQrCarrierForCompressed(result, encodingMode) {
+      const displayText = buildCompressedQrPayload(result);
+      if (encodingMode !== "byte") {
+        return { qrText: displayText, bytesLen: utf8Bytes(displayText), displayText };
+      }
+
+      if (result?.method === "deflate" && result?.payload?.data) {
+        const bytes = base64ToBytes(result.payload.data);
+        const frame = buildBinaryFrameSimple("D", bytes);
+        return { qrText: bytesToBinaryString(frame), bytesLen: frame.length, displayText };
+      }
+
+      if (result?.method === "deflate_dict" && result?.payload?.data) {
+        const profileId = result.payload.profile ?? 1;
+        const bytes = base64ToBytes(result.payload.data);
+        const header = new Uint8Array([0x51, 0x5a, 0x31, 0x4b, profileId & 0xff]); // QZ1K + profileId
+        const out = new Uint8Array(header.length + bytes.length);
+        out.set(header, 0);
+        out.set(bytes, header.length);
+        return { qrText: bytesToBinaryString(out), bytesLen: out.length, displayText };
+      }
+
+      if (result?.method === "lz_compact" && result?.payload?.data) {
+        const bytes = base64ToBytes(result.payload.data);
+        const frame = buildBinaryFrameSimple("L", bytes);
+        return { qrText: bytesToBinaryString(frame), bytesLen: frame.length, displayText };
+      }
+
+      if (result?.method?.startsWith("fixed_") && result?.payload?.profile && result?.payload?.data) {
+        const frame = buildFixedBinaryFrame(result.payload);
+        return { qrText: bytesToBinaryString(frame), bytesLen: frame.length, displayText };
+      }
+
+      // วิธีอื่น ๆ ยังใช้ text mode ไปก่อน (เพราะเป็น legacy/JSON)
+      return { qrText: displayText, bytesLen: utf8Bytes(displayText), displayText };
+    }
+
+    function buildCompressedQrPayload(result) {
+      // result: { method, payload, serialized }
+      if (result?.method?.startsWith("fixed_") && result?.payload?.profile) {
+        return buildFixedQrPayload(result.payload);
+      }
+      if (result?.method === "deflate" && result?.payload?.data) {
+        return buildDeflateQrPayload(result.payload);
+      }
+      if (result?.method === "deflate_dict" && result?.payload?.data) {
+        return buildDeflateDictQrPayload(result.payload);
+      }
+      if (result?.method === "lz_compact" && result?.payload?.data) {
+        return buildLzCompactQrPayload(result.payload);
+      }
+      // For other algorithms in this demo, keep a compact legacy form.
+      return `QZ1|J|${toBase64Url(result.serialized || "")}`;
+    }
+
+    function getComparisonCompressedResult() {
+      const nonRawResults = lastResults.filter((result) => result.method !== "raw");
+      if (nonRawResults.length) {
+        return [...nonRawResults].sort((a, b) => a.finalPayloadBytes - b.finalPayloadBytes)[0];
+      }
+      return lastBestResult;
+    }
+
+    // (buildRawQrPayload moved above as compact format)
+
+    function renderQrTextInto(container, payload, size = 220) {
+      container.innerHTML = "";
+      new QRCode(container, {
+        text: payload,
+        width: size,
+        height: size,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function renderQrByteInto(container, binaryPayload, size = 220) {
+      // ใช้ qrcode-generator (arase) เพื่อบังคับ Byte mode จริง (รับ string ที่เป็น bytes 0..255)
+      // หมายเหตุ: ถ้า scanner อ่านกลับมาเป็น text ธรรมดา อาจเพี้ยนได้ในโลกจริง
+      // แต่ใน Lab นี้ใช้เพื่อพิสูจน์ว่า "byte-mode ลด overhead" และคำนวณ payload bytes ได้ตรงกับ QR จริง
+      if (typeof qrcode === "undefined") {
+        throw new Error("qrcode_generator_not_loaded");
+      }
+      const ecc = "M";
+      const qr = qrcode(0, ecc);
+      // qrcode-generator expects binary string in Byte mode.
+      // Ensure each char code is 0..255.
+      qr.addData(binaryPayload, "Byte");
+      qr.make();
+      const count = qr.getModuleCount();
+      const margin = 4; // modules
+      const scale = Math.max(1, Math.floor(size / (count + margin * 2)));
+      const canvasSize = scale * (count + margin * 2);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = canvasSize;
+      canvas.height = canvasSize;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvasSize, canvasSize);
+      ctx.fillStyle = "#000000";
+      for (let row = 0; row < count; row++) {
+        for (let col = 0; col < count; col++) {
+          if (qr.isDark(row, col)) {
+            ctx.fillRect((col + margin) * scale, (row + margin) * scale, scale, scale);
+          }
+        }
+      }
+      container.innerHTML = "";
+      container.appendChild(canvas);
+    }
+
+    function renderQrInto(container, payload) {
+      const encodingMode = qrEncodingSelect?.value || "byte";
+      if (encodingMode === "byte") {
+        return renderQrByteInto(container, payload, 220);
+      }
+      return renderQrTextInto(container, payload, 220);
+    }
+
+    function simpleHash(text) {
+      let hash = 2166136261;
+      for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return (hash >>> 0).toString(36).slice(0, 6);
+    }
+
+    function buildChunkPayloads(payload, chunkSize = 700) {
+      const chunkId = simpleHash(payload);
+      const total = Math.ceil(payload.length / chunkSize);
+      const chunks = [];
+      for (let index = 0; index < total; index++) {
+        const part = payload.slice(index * chunkSize, (index + 1) * chunkSize);
+        chunks.push(`QZM|${chunkId}|${index + 1}/${total}|${part}`);
+      }
+      return chunks;
+    }
+
+    function renderQrChunks(container, payload, chunkSize = 700) {
+      const chunks = buildChunkPayloads(payload, chunkSize);
+      container.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.className = "qr-multi";
+      const encodingMode = qrEncodingSelect?.value || "byte";
+
+      chunks.forEach((chunkPayload, index) => {
+        const chunk = document.createElement("div");
+        chunk.className = "qr-chunk";
+        const label = document.createElement("div");
+        label.textContent = `chunk ${index + 1}/${chunks.length}`;
+        const qrHolder = document.createElement("div");
+        chunk.appendChild(label);
+        chunk.appendChild(qrHolder);
+        wrapper.appendChild(chunk);
+        if (encodingMode === "byte") {
+          renderQrByteInto(qrHolder, chunkPayload, 160);
+        } else {
+          renderQrTextInto(qrHolder, chunkPayload, 160);
+        }
+      });
+
+      container.appendChild(wrapper);
+      return chunks;
+    }
+
+    function tryRenderQr(container, payload) {
+      container.innerHTML = "";
+      try {
+        renderQrInto(container, payload);
+        return { ok: true, mode: "single", chunkCount: 1 };
+      } catch (error) {
+        try {
+          const chunks = renderQrChunks(container, payload);
+          return { ok: true, mode: "chunked", chunkCount: chunks.length, chunks };
+        } catch (chunkError) {
+          container.textContent = "ข้อมูลยาวเกินความจุ QR";
+          return { ok: false, message: chunkError.message || error.message };
+        }
+      }
+    }
+
+    function generateQrCode() {
+      if (!lastBestResult) {
+        qrStatus.textContent = "ยังไม่มีผลบีบอัดให้สร้าง QR";
+        rawQrBox.textContent = "ยังไม่มี QR";
+        compressedQrBox.textContent = "ยังไม่มี QR";
+        qrPayloadView.textContent = "ยังไม่มีข้อมูล";
+        qrDecodeFlowView.textContent = "ยังไม่มีข้อมูล";
+        return;
+      }
+
+      if (typeof QRCode === "undefined") {
+        qrStatus.textContent = "โหลดไลบรารี QR ไม่สำเร็จ";
+        rawQrBox.textContent = "สร้าง QR ไม่ได้";
+        compressedQrBox.textContent = "สร้าง QR ไม่ได้";
+        qrDecodeFlowView.textContent = "โหลดไลบรารี QR ไม่สำเร็จ";
+        return;
+      }
+
+      const comparisonResult = getComparisonCompressedResult();
+      const encodingMode = qrEncodingSelect?.value || "byte";
+      const rawCarrier = buildQrCarrierForRaw(inputText.value, encodingMode);
+      const compressedPayloadText = comparisonResult.finalPayload || buildCompressedQrPayload(comparisonResult);
+      const compressedQrText = comparisonResult.finalQrText || compressedPayloadText;
+      const rawPayload = rawCarrier.qrText;
+      const compressedPayload = compressedQrText;
+      const rawBytes = rawCarrier.bytesLen;
+      const compressedBytes = comparisonResult.finalPayloadBytes || utf8Bytes(compressedPayload);
+      const savedBytes = rawBytes - compressedBytes;
+
+      const rawRender = tryRenderQr(rawQrBox, rawPayload);
+      const compressedRender = tryRenderQr(compressedQrBox, compressedPayload);
+
+      rawQrMeta.textContent = rawRender.ok
+        ? `payload ${rawBytes.toLocaleString()} bytes | raw${encodingMode === "byte" ? " | byte-mode" : ""}${rawRender.mode === "chunked" ? ` | ${rawRender.chunkCount} QR` : ""}`
+        : `payload ${rawBytes.toLocaleString()} bytes | เกินความจุ QR`;
+      compressedQrMeta.textContent = compressedRender.ok
+        ? `payload ${compressedBytes.toLocaleString()} bytes | ${comparisonResult.label}${encodingMode === "byte" ? " | byte-mode" : ""}${compressedRender.mode === "chunked" ? ` | ${compressedRender.chunkCount} QR` : ""}`
+        : `payload ${compressedBytes.toLocaleString()} bytes | เกินความจุ QR`;
+      if (encodingMode === "byte") {
+        const rawBytesB64Url = bytesToBase64Url(binaryStringToBytes(rawPayload));
+        const compressedBytesB64Url = bytesToBase64Url(binaryStringToBytes(compressedPayload));
+        qrPayloadView.textContent = [
+          "[สรุปชั้นข้อมูล / byte-mode]",
+          "",
+          "[engine payload / raw]",
+          previewTextBlock(inputText.value, 240),
+          "",
+          "[final QR payload / raw / แบบที่คนอ่านง่าย]",
+          rawCarrier.displayText,
+          "",
+          `[decoder input / raw / bytes ที่ถูกใส่ใน QR จริง (${rawBytes.toLocaleString()} bytes)]`,
+          rawBytesB64Url,
+          "",
+          `[engine payload / compressed / ${comparisonResult.label}]`,
+          summarizeEnginePayload(comparisonResult),
+          "",
+          "[final QR payload / compressed / แบบที่ระบบห่อก่อนเข้า QR]",
+          compressedPayloadText,
+          "",
+          `[decoder input / compressed / bytes ที่ถูกใส่ใน QR จริง (${compressedBytes.toLocaleString()} bytes)]`,
+          compressedBytesB64Url
+        ].join("\n");
+        qrDecodeFlowView.textContent = [
+          "[decoder flow / byte-mode]",
+          "1) scanner อ่าน QR ออกมาเป็นสตริงไบต์",
+          "2) decoder แปลงสตริงไบต์กลับเป็น bytes",
+          "3) อ่าน header เช่น QZ1D / QZ1L / QZ1F / QZ1T",
+          "4) ถ้าเป็น QZ1D ให้เอา bytes หลัง header ไป inflateRaw()",
+          "5) ได้ข้อความต้นฉบับกลับมา",
+          "",
+          `[หมายเหตุ] สิ่งที่ decoder ต้องรับจริงคือ decoder input ด้านบน ไม่ใช่ engine payload JSON`
+        ].join("\n");
+      } else {
+        qrPayloadView.textContent = [
+          "[สรุปชั้นข้อมูล / text-mode]",
+          "",
+          "[engine payload / raw]",
+          previewTextBlock(inputText.value, 240),
+          "",
+          "[final QR payload / raw / ตัวนี้ถูกใส่ใน QR ตรง ๆ]",
+          rawPayload,
+          "",
+          `[engine payload / compressed / ${comparisonResult.label}]`,
+          summarizeEnginePayload(comparisonResult),
+          "",
+          "[final QR payload / compressed / decoder รับตัวนี้ตรง ๆ]",
+          compressedPayload
+        ].join("\n");
+        qrDecodeFlowView.textContent = [
+          "[decoder flow / text-mode]",
+          "1) scanner อ่าน QR ออกมาเป็นข้อความ เช่น QZ1|D|...",
+          "2) decoder ดู prefix ว่าเป็น QZ1|T| / QZ1|B| / QZ1|D| / QZ1|L| / QZ1|F|",
+          "3) ถ้าเป็น QZ1|D| ให้เอาส่วนหลัง prefix ไป base64url decode",
+          "4) จากนั้น inflateRaw() เพื่อคืนข้อความต้นฉบับ",
+          "",
+          "[หมายเหตุ] decoder ไม่ควรรับ object ภายในอย่าง { data, originalBytes } โดยตรง"
+        ].join("\n");
+      }
+      const compareText = savedBytes >= 0
+        ? `แบบบีบอัดเล็กกว่า ${savedBytes.toLocaleString()} bytes`
+        : `แบบบีบอัดใหญ่กว่า ${Math.abs(savedBytes).toLocaleString()} bytes`;
+      if (rawRender.ok && compressedRender.ok) {
+        const chunkNote = rawRender.mode === "chunked" || compressedRender.mode === "chunked"
+          ? ` | raw ${rawRender.chunkCount} QR, compressed ${compressedRender.chunkCount} QR`
+          : "";
+        qrStatus.textContent = `สร้าง QR เปรียบเทียบแล้ว | ${compareText}${chunkNote}`;
+      } else if (!rawRender.ok && compressedRender.ok) {
+        qrStatus.textContent = `QR แบบไม่ย่อเกินความจุ แต่แบบบีบอัดยังสร้างได้ | ${compareText}`;
+      } else if (rawRender.ok && !compressedRender.ok) {
+        qrStatus.textContent = `QR แบบบีบอัดเกินความจุ แต่แบบไม่ย่อยังสร้างได้ | ${compareText}`;
+      } else {
+        qrStatus.textContent = "ทั้งสองแบบเกินความจุ QR สำหรับข้อความนี้";
+      }
+    }
+
+    async function storeToBackend(text, payload) {
+      const response = await fetch("/api/store", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, payload })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "store_failed");
+      return data.id;
+    }
+
+    async function generateMemberQrCode() {
+      if (!lastBestResult) {
+        memberQrMeta.textContent = "ยังไม่มีผลวิเคราะห์";
+        memberQrBox.textContent = "ยังไม่มี QR";
+        return;
+      }
+
+      memberQrMeta.textContent = "กำลังบันทึกข้อมูลไปหลังบ้าน...";
+      refResultView.textContent = "ยังไม่มีข้อมูล";
+
+      try {
+        const bestPayload = lastBestResult.finalPayload || "";
+        const id = await storeToBackend(inputText.value, bestPayload);
+        const ref = `QZR|${id}`;
+        const bytes = utf8Bytes(ref);
+        const render = tryRenderQr(memberQrBox, ref);
+        memberQrMeta.textContent = `payload ${bytes.toLocaleString()} bytes | ref ${id}${render.mode === "chunked" ? ` | ${render.chunkCount} QR` : ""}`;
+        refInput.value = ref;
+        qrStatus.textContent = `สร้าง QR สมาชิกแล้ว | ref สั้นมาก (${bytes.toLocaleString()} bytes)`;
+      } catch (error) {
+        memberQrMeta.textContent = "สร้าง QR สมาชิกไม่ได้ (ต้องรัน qrzip_server.py)";
+        memberQrBox.textContent = "ยังไม่มี QR";
+      }
+    }
+
+    function parseRefId(input) {
+      const value = (input || "").trim();
+      if (!value) return "";
+      if (value.startsWith("QZR|")) return value.slice(4).trim();
+      return value;
+    }
+
+    async function resolveMemberRef() {
+      const rid = parseRefId(refInput.value);
+      if (!rid) {
+        refResultView.textContent = "กรุณาวาง QZR|<id> หรือ <id>";
+        return;
+      }
+      refResultView.textContent = "กำลังดึงข้อมูล...";
+      try {
+        const response = await fetch(`/api/get/${encodeURIComponent(rid)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || "get_failed");
+        refResultView.textContent = data.text || "";
+      } catch (error) {
+        refResultView.textContent = "ดึงข้อมูลไม่ได้ (ต้องรัน qrzip_server.py และใช้ลิงก์ผ่านเซิร์ฟเวอร์)";
+      }
+    }
+
+    function downloadQrCode(container, filename) {
+      const canvas = container.querySelector("canvas");
+      const image = container.querySelector("img");
+
+      if (canvas) {
+        const link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = filename;
+        link.click();
+        return;
+      }
+
+      if (image?.src) {
+        const link = document.createElement("a");
+        link.href = image.src;
+        link.download = filename;
+        link.click();
+        return;
+      }
+
+      qrStatus.textContent = "ยังไม่มี QR ให้ดาวน์โหลด";
+    }
+
+    inputText.value = samples.repeated;
+    runCompression();
+  </script>
+</body>
+</html>
