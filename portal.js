@@ -428,23 +428,22 @@ function dictDecodeBytes(profileId, tokenBytes) {
 function parseInlineDictBlob(blobBytes) {
   if (!blobBytes || blobBytes.length < 3) throw new Error("invalid_inline_dict");
   const v = blobBytes[0];
-  if (v !== 1) throw new Error("unknown_inline_dict_version");
+  if (v !== 1 && v !== 2) throw new Error("unknown_inline_dict_version");
   const n = blobBytes[1];
   let pos = 2;
-  const entries = [];
+  const entriesBytes = [];
   for (let i = 0; i < n; i++) {
     if (pos >= blobBytes.length) throw new Error("invalid_inline_dict");
     const len = blobBytes[pos++];
     if (pos + len > blobBytes.length) throw new Error("invalid_inline_dict");
-    entries.push(decoder.decode(blobBytes.slice(pos, pos + len)));
+    entriesBytes.push(blobBytes.slice(pos, pos + len));
     pos += len;
   }
   const deflateBytes = blobBytes.slice(pos);
-  return { entries, deflateBytes };
+  return { version: v, entriesBytes, deflateBytes };
 }
 
-function inlineDictDecodeBytes(dictEntries, tokenBytes) {
-  const dictBytes = dictEntries.map((s) => encoder.encode(s));
+function inlineDictDecodeBytes(dictBytes, tokenBytes) {
   const out = [];
   for (let i = 0; i < tokenBytes.length; i++) {
     const b = tokenBytes[i];
@@ -621,7 +620,7 @@ async function decodeQrzipPayload(payload) {
     const blob = base45ToBytes(payload.slice(5));
     const parsed = parseInlineDictBlob(blob);
     const restored = pako.inflateRaw(parsed.deflateBytes);
-    const utf8 = inlineDictDecodeBytes(parsed.entries, restored);
+    const utf8 = inlineDictDecodeBytes(parsed.entriesBytes, restored);
     return { kind: "free_deflate_inline", payload, text: decoder.decode(utf8), meta: "free | deflate+inlineDict (base45)" };
   }
 
@@ -685,7 +684,7 @@ async function decodeQrzipPayload(payload) {
       const blob = bytes.slice(4);
       const parsed = parseInlineDictBlob(blob);
       const restored = pako.inflateRaw(parsed.deflateBytes);
-      const utf8 = inlineDictDecodeBytes(parsed.entries, restored);
+      const utf8 = inlineDictDecodeBytes(parsed.entriesBytes, restored);
       return { kind: "free_deflate_inline", payload, text: decoder.decode(utf8), meta: "free | deflate+inlineDict (byte-mode)" };
     }
   }
@@ -717,7 +716,7 @@ async function decodeQrzipPayload(payload) {
     const blob = base64UrlToBytes(payload.split("|", 3)[2]);
     const parsed = parseInlineDictBlob(blob);
     const restored = pako.inflateRaw(parsed.deflateBytes);
-    const utf8 = inlineDictDecodeBytes(parsed.entries, restored);
+    const utf8 = inlineDictDecodeBytes(parsed.entriesBytes, restored);
     return { kind: "free_deflate_inline", payload, text: decoder.decode(utf8), meta: "free | deflate+inlineDict" };
   }
   if (payload.startsWith("QZ1|L|")) {
