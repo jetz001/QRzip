@@ -315,6 +315,7 @@
             <select id="qrEncodingSelect" title="โหมดการเข้ารหัสข้อมูลลง QR">
               <option value="byte">QR Byte mode (ลด overhead)</option>
               <option value="text">QR Text mode (คัดลอกได้)</option>
+              <option value="text45">QR Text alnum (Base45)</option>
             </select>
             <select id="autoObjectiveSelect" title="เกณฑ์เลือกผลลัพธ์ (โหมด Auto)">
               <option value="bytes">สั้นสุด (bytes-first)</option>
@@ -662,6 +663,56 @@
       return base64.replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
     }
 
+    // Base45 (เพื่อให้ payload เข้ากลุ่ม QR Alphanumeric mode ได้)
+    // Charset ตรงตามมาตรฐาน Base45: 0-9A-Z space $%*+-./:
+    const BASE45_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
+
+    function base45Encode(bytes) {
+      let out = "";
+      for (let i = 0; i < bytes.length; i += 2) {
+        if (i + 1 < bytes.length) {
+          const x = (bytes[i] << 8) + bytes[i + 1];
+          const e = x % 45;
+          const d = Math.floor(x / 45) % 45;
+          const c = Math.floor(x / 2025);
+          out += BASE45_CHARSET[e] + BASE45_CHARSET[d] + BASE45_CHARSET[c];
+        } else {
+          const x = bytes[i];
+          const e = x % 45;
+          const d = Math.floor(x / 45);
+          out += BASE45_CHARSET[e] + BASE45_CHARSET[d];
+        }
+      }
+      return out;
+    }
+
+    function base45Decode(text) {
+      const valueOf = new Map();
+      for (let i = 0; i < BASE45_CHARSET.length; i++) valueOf.set(BASE45_CHARSET[i], i);
+      const out = [];
+      for (let i = 0; i < text.length;) {
+        // 3 chars -> 2 bytes, 2 chars -> 1 byte
+        if (i + 2 < text.length) {
+          const c1 = valueOf.get(text[i]);
+          const c2 = valueOf.get(text[i + 1]);
+          const c3 = valueOf.get(text[i + 2]);
+          if (c1 === undefined || c2 === undefined || c3 === undefined) throw new Error("invalid_base45");
+          const x = c1 + c2 * 45 + c3 * 2025;
+          out.push((x >> 8) & 0xff, x & 0xff);
+          i += 3;
+        } else {
+          if (i + 1 >= text.length) throw new Error("invalid_base45");
+          const c1 = valueOf.get(text[i]);
+          const c2 = valueOf.get(text[i + 1]);
+          if (c1 === undefined || c2 === undefined) throw new Error("invalid_base45");
+          const x = c1 + c2 * 45;
+          out.push(x & 0xff);
+          i += 2;
+        }
+      }
+      return Uint8Array.from(out);
+    }
+
     function isAsciiOnly(text) {
       for (const char of text) {
         if (char.charCodeAt(0) > 0x7f) return false;
@@ -954,13 +1005,25 @@
       return QR_BYTE_CAPACITY_M[version - 1] || 0;
     }
 
-    function buildScanability(bytes) {
-      const version = estimateQrVersion(bytes);
+    function alnumEffectiveBytes(charCount) {
+      // QR alphanumeric: 2 chars = 11 bits, 1 char = 6 bits
+      const pairs = Math.floor(charCount / 2);
+      const rem = charCount % 2;
+      const bits = pairs * 11 + (rem ? 6 : 0);
+      return Math.ceil(bits / 8);
+    }
+
+    function buildScanability(bytes, encodingMode, qrText) {
+      // ใช้ "effective bytes" เพื่อประมาณความแน่น (base45 จะได้ประโยชน์จาก alphanumeric mode)
+      const mode = encodingMode || "byte";
+      const effectiveBytes = mode === "text45" ? alnumEffectiveBytes((qrText || "").length) : bytes;
+      const version = estimateQrVersion(effectiveBytes);
       if (version === null) {
         return {
           version: null,
           capacity: 0,
           utilization: 1,
+          effectiveBytes,
           score: 5,
           label: "เกิน 1 QR",
           recommendation: "ควรใช้ Member QR",
@@ -969,7 +1032,7 @@
       }
 
       const capacity = getQrCapacity(version);
-      const utilization = capacity ? bytes / capacity : 1;
+      const utilization = capacity ? effectiveBytes / capacity : 1;
 
       // สร้างคะแนนจาก "version" + "ความแน่นจริง" (utilization)
       // หลักคิด: ใกล้เต็ม 1 ใบจะสแกนยากขึ้นเร็วมาก แม้ยังไม่เกินความจุ
@@ -998,7 +1061,7 @@
         freeReady = false;
       }
 
-      return { version, capacity, utilization, score, label, recommendation, freeReady };
+      return { version, capacity, utilization, effectiveBytes, score, label, recommendation, freeReady };
     }
 
     function lz78Compress(text) {
@@ -1762,7 +1825,7 @@
         const finalPayload = carrier.displayText;
         const finalQrText = carrier.qrText;
         const finalPayloadBytes = carrier.bytesLen;
-        const scanability = buildScanability(finalPayloadBytes);
+        const scanability = buildScanability(finalPayloadBytes, encodingMode, finalQrText);
         const ok = decoded === text;
         return {
           method,
@@ -1791,13 +1854,16 @@
 
     function renderTopStats(stats, best) {
       topStats.innerHTML = "";
+      const payloadStat = (best.scanability?.effectiveBytes && best.scanability.effectiveBytes !== best.finalPayloadBytes)
+        ? `${best.finalPayloadBytes.toLocaleString()} bytes (alnum≈ ${best.scanability.effectiveBytes.toLocaleString()} bytes)`
+        : formatBytes(best.finalPayloadBytes);
       const items = [
         ["จำนวนตัวอักษร", stats.chars.toLocaleString()],
         ["ขนาด UTF-8 เดิม", formatBytes(stats.utf8Bytes)],
         ["โทเคนเดิมโดยประมาณ", stats.estimatedTokens.toLocaleString()],
         ["โทเคนหลังบีบอัด", best.serializedTokens.toLocaleString()],
         ["ลดลงกี่โทเคน", best.savedTokens.toLocaleString()],
-        ["payload เข้า QR", formatBytes(best.finalPayloadBytes)],
+        ["payload เข้า QR", payloadStat],
         ["QR version โดยประมาณ", best.scanability.version ? `v${best.scanability.version}` : "> v40"],
         ["ความแน่นของ QR", best.scanability.capacity ? `${Math.round(best.scanability.utilization * 100)}% ของความจุ (≈ ${best.scanability.capacity.toLocaleString()} bytes)` : "เกิน 1 QR"],
         ["scanability score", `${best.scanability.score}/100 (${best.scanability.label})`],
@@ -1862,7 +1928,7 @@
         ${objectiveNote ? `${objectiveNote}.<br>` : ""}
         ${dictProfileNote ? `${dictProfileNote}.<br>` : ""}
         ข้อความนี้มีการซ้ำระดับประมาณ <strong>${repeatedScore.toFixed(2)}%</strong>, entropy ประมาณ <strong>${stats.entropy.toFixed(3)}</strong> bits/char และ ${compressionNote}.<br>
-        payload สำหรับ QR ของตัวที่ชนะมีขนาดประมาณ <strong>${best.finalPayloadBytes.toLocaleString()} bytes</strong>.<br>
+        payload สำหรับ QR ของตัวที่ชนะมีขนาดประมาณ <strong>${best.finalPayloadBytes.toLocaleString()} bytes</strong>${best.scanability?.effectiveBytes && best.scanability.effectiveBytes !== best.finalPayloadBytes ? ` (alnum≈ ${best.scanability.effectiveBytes.toLocaleString()} bytes)` : ""}.<br>
         ${scanabilityNote}.<br>
         ${usageDecisionNote}.<br>
         สำหรับการประเมินโทเคน: เดิมประมาณ <strong>${stats.estimatedTokens.toLocaleString()}</strong> token, หลังบีบอัดประมาณ <strong>${best.serializedTokens.toLocaleString()}</strong> token, ${tokenNote}.<br>
@@ -1909,7 +1975,7 @@
             token เดิมประมาณ ${result.originalTokens.toLocaleString()} | หลัง serialize ${result.serializedTokens.toLocaleString()} | ${tokenDeltaText} | token ratio ${formatPercent(result.tokenRatio)}
           </div>
           <div class="small" style="margin-top: 6px;">
-            final QR payload ${formatBytes(result.finalPayloadBytes)}
+            final QR payload ${formatBytes(result.finalPayloadBytes)}${result.scanability?.effectiveBytes && result.scanability.effectiveBytes !== result.finalPayloadBytes ? ` (alnum≈ ${formatBytes(result.scanability.effectiveBytes)})` : ""}
           </div>
           <div class="small" style="margin-top: 6px;">
             scanability ${result.scanability.score}/100 (${result.scanability.label}) | ${result.scanability.version ? `ประมาณ v${result.scanability.version}` : "เกิน 1 QR"}${result.scanability.capacity ? ` | แน่น ${Math.round(result.scanability.utilization * 100)}%` : ""}
@@ -1948,6 +2014,10 @@
     // - Deflate+Dict1:   "QZ1K" + <profileId:1> + <deflate bytes>
     // - LZ Compact:      "QZ1L" + <lz token bytes>
     // - Fixed Huffman:   "QZ1F" + <profileId:1> + <bitLength:uint16> + <bitstream bytes>
+    //
+    // QR Text alnum (Base45) - เพื่อให้ QR ใช้ Alphanumeric mode ได้ (capacity สูงกว่า byte-mode):
+    // - Deflate Raw:     "QZ1D:" + <base45(deflate bytes)>
+    // - Deflate+Dict:    "QZ1K<profileId>:" + <base45(deflate bytes)>
 
     function buildRawQrPayload(text) {
       if (isAsciiOnly(text)) {
@@ -1978,6 +2048,17 @@
       const profileId = payload.profile ?? 1;
       const dataB64Url = toBase64UrlFromBase64(payload.data || "");
       return `QZ1|K|${profileId}|${dataB64Url}`;
+    }
+
+    function buildDeflateQrPayload45(payload) {
+      const bytes = base64ToBytes(payload.data || "");
+      return `QZ1D:${base45Encode(bytes)}`;
+    }
+
+    function buildDeflateDictQrPayload45(payload) {
+      const profileId = payload.profile ?? 1;
+      const bytes = base64ToBytes(payload.data || "");
+      return `QZ1K${profileId}:${base45Encode(bytes)}`;
     }
 
     function buildBinaryFrameSimple(methodChar, dataBytes) {
@@ -2022,8 +2103,9 @@
     }
 
     function buildQrCarrierForCompressed(result, encodingMode) {
-      const displayText = buildCompressedQrPayload(result);
+      const displayText = buildCompressedQrPayload(result, encodingMode);
       if (encodingMode !== "byte") {
+        // text / text45: ให้ qrText เป็น string ตามที่สร้างไว้
         return { qrText: displayText, bytesLen: utf8Bytes(displayText), displayText };
       }
 
@@ -2058,16 +2140,17 @@
       return { qrText: displayText, bytesLen: utf8Bytes(displayText), displayText };
     }
 
-    function buildCompressedQrPayload(result) {
+    function buildCompressedQrPayload(result, encodingMode) {
       // result: { method, payload, serialized }
+      const mode = encodingMode || "text";
       if (result?.method?.startsWith("fixed_") && result?.payload?.profile) {
         return buildFixedQrPayload(result.payload);
       }
       if (result?.method === "deflate" && result?.payload?.data) {
-        return buildDeflateQrPayload(result.payload);
+        return mode === "text45" ? buildDeflateQrPayload45(result.payload) : buildDeflateQrPayload(result.payload);
       }
       if (result?.method === "deflate_dict" && result?.payload?.data) {
-        return buildDeflateDictQrPayload(result.payload);
+        return mode === "text45" ? buildDeflateDictQrPayload45(result.payload) : buildDeflateDictQrPayload(result.payload);
       }
       if (result?.method === "lz_compact" && result?.payload?.data) {
         return buildLzCompactQrPayload(result.payload);

@@ -35,6 +35,35 @@ function base64UrlToBytes(base64url) {
   return base64ToBytes(base64);
 }
 
+// Base45 decode (รองรับ QR Text alnum: QZ1D:<base45> และ QZ1K<profile>:<base45>)
+const BASE45_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
+
+function base45ToBytes(text) {
+  const valueOf = new Map();
+  for (let i = 0; i < BASE45_CHARSET.length; i++) valueOf.set(BASE45_CHARSET[i], i);
+  const out = [];
+  for (let i = 0; i < text.length;) {
+    if (i + 2 < text.length) {
+      const c1 = valueOf.get(text[i]);
+      const c2 = valueOf.get(text[i + 1]);
+      const c3 = valueOf.get(text[i + 2]);
+      if (c1 === undefined || c2 === undefined || c3 === undefined) throw new Error("invalid_base45");
+      const x = c1 + c2 * 45 + c3 * 2025;
+      out.push((x >> 8) & 0xff, x & 0xff);
+      i += 3;
+    } else {
+      if (i + 1 >= text.length) throw new Error("invalid_base45");
+      const c1 = valueOf.get(text[i]);
+      const c2 = valueOf.get(text[i + 1]);
+      if (c1 === undefined || c2 === undefined) throw new Error("invalid_base45");
+      const x = c1 + c2 * 45;
+      out.push(x & 0xff);
+      i += 2;
+    }
+  }
+  return Uint8Array.from(out);
+}
+
 function binaryStringToBytes(binary) {
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
@@ -526,6 +555,26 @@ async function decodeQrzipPayload(payload) {
     const rid = payload.slice(4);
     const data = await apiGet(`/api/get/${encodeURIComponent(rid)}`);
     return { kind: "member_ref", payload, text: data.text || "", meta: `member ref | ${rid}` };
+  }
+
+  // QR Text alnum (Base45): หลีกเลี่ยง base64 overhead และให้ QR ใช้ alphanumeric mode ได้
+  if (payload.startsWith("QZ1D:")) {
+    if (typeof pako === "undefined") throw new Error("pako_not_loaded");
+    const bytes = base45ToBytes(payload.slice(5));
+    const restored = pako.inflateRaw(bytes);
+    return { kind: "free_deflate", payload, text: decoder.decode(restored), meta: "free | deflate raw (base45)" };
+  }
+  if (payload.startsWith("QZ1K")) {
+    const match = payload.match(/^QZ1K(\d+):(.*)$/);
+    if (match) {
+      if (typeof pako === "undefined") throw new Error("pako_not_loaded");
+      const profileId = Number(match[1] || 0);
+      const b45 = match[2] || "";
+      const bytes = base45ToBytes(b45);
+      const restored = pako.inflateRaw(bytes);
+      const utf8 = dictDecodeBytes(profileId, restored);
+      return { kind: "free_deflate_dict", payload, text: decoder.decode(utf8), meta: `free | deflate+dict${profileId} (base45)` };
+    }
   }
 
   // รองรับ QR Byte mode: payload เป็น "สตริงไบต์" (charCode 0-255) เช่น "QZ1D<bytes...>"
