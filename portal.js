@@ -424,6 +424,46 @@ function dictDecodeBytes(profileId, tokenBytes) {
   return Uint8Array.from(out);
 }
 
+// InlineDict (BPE) decoder helpers (ต้องตรงกับ Lab)
+function parseInlineDictBlob(blobBytes) {
+  if (!blobBytes || blobBytes.length < 3) throw new Error("invalid_inline_dict");
+  const v = blobBytes[0];
+  if (v !== 1) throw new Error("unknown_inline_dict_version");
+  const n = blobBytes[1];
+  let pos = 2;
+  const entries = [];
+  for (let i = 0; i < n; i++) {
+    if (pos >= blobBytes.length) throw new Error("invalid_inline_dict");
+    const len = blobBytes[pos++];
+    if (pos + len > blobBytes.length) throw new Error("invalid_inline_dict");
+    entries.push(decoder.decode(blobBytes.slice(pos, pos + len)));
+    pos += len;
+  }
+  const deflateBytes = blobBytes.slice(pos);
+  return { entries, deflateBytes };
+}
+
+function inlineDictDecodeBytes(dictEntries, tokenBytes) {
+  const dictBytes = dictEntries.map((s) => encoder.encode(s));
+  const out = [];
+  for (let i = 0; i < tokenBytes.length; i++) {
+    const b = tokenBytes[i];
+    if (b !== 0x00) {
+      out.push(b);
+      continue;
+    }
+    if (i + 1 >= tokenBytes.length) break;
+    const code = tokenBytes[++i];
+    if (code === 0x00) {
+      out.push(0x00);
+      continue;
+    }
+    const d = dictBytes[code - 1];
+    if (d) for (const db of d) out.push(db);
+  }
+  return Uint8Array.from(out);
+}
+
 function buildWeightedFrequencyMap(entries) {
   const map = new Map();
   entries.forEach(([chars, weight]) => {
@@ -576,6 +616,14 @@ async function decodeQrzipPayload(payload) {
       return { kind: "free_deflate_dict", payload, text: decoder.decode(utf8), meta: `free | deflate+dict${profileId} (base45)` };
     }
   }
+  if (payload.startsWith("QZ1U:")) {
+    if (typeof pako === "undefined") throw new Error("pako_not_loaded");
+    const blob = base45ToBytes(payload.slice(5));
+    const parsed = parseInlineDictBlob(blob);
+    const restored = pako.inflateRaw(parsed.deflateBytes);
+    const utf8 = inlineDictDecodeBytes(parsed.entries, restored);
+    return { kind: "free_deflate_inline", payload, text: decoder.decode(utf8), meta: "free | deflate+inlineDict (base45)" };
+  }
 
   // รองรับ QR Byte mode: payload เป็น "สตริงไบต์" (charCode 0-255) เช่น "QZ1D<bytes...>"
   if (payload.startsWith("QZ1") && payload.length >= 4 && payload[3] !== "|") {
@@ -632,6 +680,14 @@ async function decodeQrzipPayload(payload) {
         meta: `free | fixed ${profileKey || "unknown"} (byte-mode)`
       };
     }
+    if (method === "U") {
+      if (typeof pako === "undefined") throw new Error("pako_not_loaded");
+      const blob = bytes.slice(4);
+      const parsed = parseInlineDictBlob(blob);
+      const restored = pako.inflateRaw(parsed.deflateBytes);
+      const utf8 = inlineDictDecodeBytes(parsed.entries, restored);
+      return { kind: "free_deflate_inline", payload, text: decoder.decode(utf8), meta: "free | deflate+inlineDict (byte-mode)" };
+    }
   }
 
   if (payload.startsWith("QZ1|T|")) {
@@ -655,6 +711,14 @@ async function decodeQrzipPayload(payload) {
     const restored = pako.inflateRaw(bytes);
     const utf8 = dictDecodeBytes(profileId, restored);
     return { kind: "free_deflate_dict", payload, text: decoder.decode(utf8), meta: `free | deflate+dict${profileId}` };
+  }
+  if (payload.startsWith("QZ1|U|")) {
+    if (typeof pako === "undefined") throw new Error("pako_not_loaded");
+    const blob = base64UrlToBytes(payload.split("|", 3)[2]);
+    const parsed = parseInlineDictBlob(blob);
+    const restored = pako.inflateRaw(parsed.deflateBytes);
+    const utf8 = inlineDictDecodeBytes(parsed.entries, restored);
+    return { kind: "free_deflate_inline", payload, text: decoder.decode(utf8), meta: "free | deflate+inlineDict" };
   }
   if (payload.startsWith("QZ1|L|")) {
     return { kind: "free_lz_compact", payload, text: decodeLzCompactPayload(payload.split("|", 3)[2]), meta: "free | lz compact" };

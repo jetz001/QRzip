@@ -309,6 +309,7 @@
               <option value="fixed_mixed">Fixed MIX</option>
               <option value="deflate">Deflate Raw</option>
               <option value="deflate_dict">Deflate + Dict (Auto)</option>
+              <option value="deflate_inline">Deflate + InlineDict (BPE)</option>
               <option value="lz_compact">LZ Compact</option>
               <option value="lz78">LZ78</option>
             </select>
@@ -588,6 +589,15 @@
           data: previewTextBlock(result.payload.data || "", 220),
           originalBytes: result.payload.originalBytes ?? result.originalBytes,
           tokenBytes: result.payload.tokenBytes
+        }, null, 2);
+      }
+      if (result.method === "deflate_inline") {
+        return JSON.stringify({
+          entryCount: result.payload.entryCount,
+          dictBytes: result.payload.dictBytes,
+          tokenBytes: result.payload.tokenBytes,
+          blob: previewTextBlock(result.payload.blob || "", 180),
+          originalBytes: result.payload.originalBytes ?? result.originalBytes
         }, null, 2);
       }
       if (result.method === "lz_compact") {
@@ -1589,6 +1599,171 @@
       return decoder.decode(utf8);
     }
 
+    // InlineDict (BPE-ish) - สร้าง dict จาก "ข้อความนี้" แบบอัตโนมัติ แล้วส่ง dict ไปกับ payload
+    // เป้าหมาย: ลด bytes ได้มากในข้อความยาว ๆ ที่มี pattern ซ้ำจริง (เช่น bigram ซ้ำสูง)
+    // หมายเหตุ: มี overhead ของ dict แต่คาดว่าจะคุ้มเมื่อข้อความยาวพอ
+    function mineInlinePhrases(text, maxEntries = 48) {
+      const s = String(text || "");
+      const counts = new Map();
+      const minLen = 3;
+      const maxLen = 14;
+      for (let len = minLen; len <= maxLen; len++) {
+        for (let i = 0; i + len <= s.length; i++) {
+          const sub = s.slice(i, i + len);
+          // ตัด junk
+          if (!sub.trim()) continue;
+          if (/^[0-9]+$/.test(sub)) continue;
+          counts.set(sub, (counts.get(sub) || 0) + 1);
+        }
+      }
+      // ประมาณ net gain: (len-2) * (count-1) (แทนที่ด้วย 2 bytes token)
+      const scored = [];
+      for (const [sub, count] of counts.entries()) {
+        if (count < 3) continue;
+        const len = sub.length;
+        const score = (len - 2) * (count - 1);
+        if (score <= 6) continue;
+        scored.push({ sub, count, score, len });
+      }
+      scored.sort((a, b) => (b.score - a.score) || (b.len - a.len));
+      const picked = [];
+      const used = new Set();
+      for (const item of scored) {
+        if (picked.length >= maxEntries) break;
+        // กัน phrase ซ้ำ/ทับซ้อนแบบ obvious: ถ้าเป็น substring ของตัวที่เลือกแล้ว ให้ข้าม
+        let overlapped = false;
+        for (const p of picked) {
+          if (p.includes(item.sub) || item.sub.includes(p)) { overlapped = true; break; }
+        }
+        if (overlapped) continue;
+        if (used.has(item.sub)) continue;
+        used.add(item.sub);
+        picked.push(item.sub);
+      }
+      // เรียงยาวก่อนเพื่อให้ greedy match โดน phrase ยาวก่อน
+      picked.sort((a, b) => b.length - a.length);
+      return picked;
+    }
+
+    function inlineDictEncodeBytes(dictEntries, utf8Bytes) {
+      const dictBytes = dictEntries.map((s) => encoder.encode(s));
+      const out = [];
+      let i = 0;
+      while (i < utf8Bytes.length) {
+        let bestId = 0;
+        let bestLen = 0;
+        for (let id = 1; id <= dictBytes.length; id++) {
+          const d = dictBytes[id - 1];
+          const len = d.length;
+          if (len < 3) continue;
+          if (i + len > utf8Bytes.length) continue;
+          let ok = true;
+          for (let k = 0; k < len; k++) {
+            if (utf8Bytes[i + k] !== d[k]) { ok = false; break; }
+          }
+          if (ok && len > bestLen) { bestLen = len; bestId = id; }
+        }
+        if (bestId) {
+          out.push(0x00, bestId & 0xff);
+          i += bestLen;
+          continue;
+        }
+        const b = utf8Bytes[i];
+        if (b === 0x00) out.push(0x00, 0x00);
+        else out.push(b);
+        i += 1;
+      }
+      return Uint8Array.from(out);
+    }
+
+    function inlineDictDecodeBytes(dictEntries, tokenBytes) {
+      const dictBytes = dictEntries.map((s) => encoder.encode(s));
+      const out = [];
+      for (let i = 0; i < tokenBytes.length; i++) {
+        const b = tokenBytes[i];
+        if (b !== 0x00) {
+          out.push(b);
+          continue;
+        }
+        if (i + 1 >= tokenBytes.length) break;
+        const code = tokenBytes[++i];
+        if (code === 0x00) {
+          out.push(0x00);
+          continue;
+        }
+        const d = dictBytes[code - 1];
+        if (d) for (const db of d) out.push(db);
+      }
+      return Uint8Array.from(out);
+    }
+
+    function buildInlineDictBlob(dictEntries, dataDeflateBytes) {
+      // format:
+      // [v=1][N][len][entryBytes...]... [deflateBytes...]
+      const entriesBytes = dictEntries.map((s) => encoder.encode(s)).slice(0, 48);
+      const n = Math.min(48, entriesBytes.length);
+      let headerLen = 2;
+      for (let i = 0; i < n; i++) headerLen += 1 + Math.min(255, entriesBytes[i].length);
+      const out = new Uint8Array(headerLen + dataDeflateBytes.length);
+      out[0] = 1;
+      out[1] = n & 0xff;
+      let pos = 2;
+      for (let i = 0; i < n; i++) {
+        const b = entriesBytes[i];
+        const len = Math.min(255, b.length);
+        out[pos++] = len & 0xff;
+        out.set(b.slice(0, len), pos);
+        pos += len;
+      }
+      out.set(dataDeflateBytes, pos);
+      return out;
+    }
+
+    function parseInlineDictBlob(blobBytes) {
+      if (!blobBytes || blobBytes.length < 3) throw new Error("invalid_inline_dict");
+      const v = blobBytes[0];
+      if (v !== 1) throw new Error("unknown_inline_dict_version");
+      const n = blobBytes[1];
+      let pos = 2;
+      const entries = [];
+      for (let i = 0; i < n; i++) {
+        if (pos >= blobBytes.length) throw new Error("invalid_inline_dict");
+        const len = blobBytes[pos++];
+        if (pos + len > blobBytes.length) throw new Error("invalid_inline_dict");
+        entries.push(decoder.decode(blobBytes.slice(pos, pos + len)));
+        pos += len;
+      }
+      const deflateBytes = blobBytes.slice(pos);
+      return { entries, deflateBytes };
+    }
+
+    function deflateInlineCompress(text) {
+      if (typeof pako === "undefined") throw new Error("pako_not_loaded");
+      const input = encoder.encode(text);
+      const dictEntries = mineInlinePhrases(text, 48);
+      const tokenBytes = inlineDictEncodeBytes(dictEntries, input);
+      const compressed = pako.deflateRaw(tokenBytes, { level: 9 });
+      const blob = buildInlineDictBlob(dictEntries, compressed);
+      return {
+        method: "deflate_inline",
+        // เก็บ blob เป็น base64 เพื่อให้ buildQrCarrier แปลงไป byte/frame หรือ base45 ได้
+        blob: bytesToBase64(blob),
+        entryCount: dictEntries.length,
+        dictBytes: blob.length - compressed.length,
+        tokenBytes: tokenBytes.length,
+        originalBytes: input.length
+      };
+    }
+
+    function deflateInlineDecompress(payload) {
+      if (typeof pako === "undefined") throw new Error("pako_not_loaded");
+      const blob = base64ToBytes(payload.blob || "");
+      const parsed = parseInlineDictBlob(blob);
+      const restored = pako.inflateRaw(parsed.deflateBytes);
+      const utf8 = inlineDictDecodeBytes(parsed.entries, restored);
+      return decoder.decode(utf8);
+    }
+
     const compressors = {
       raw: { compress: rawCompress, decompress: rawDecompress, label: "Raw" },
       rle: { compress: rleCompress, decompress: rleDecompress, label: "RLE" },
@@ -1617,6 +1792,11 @@
         compress: deflateDictCompress,
         decompress: deflateDictDecompress,
         label: "Deflate + Dict (Auto)"
+      },
+      deflate_inline: {
+        compress: deflateInlineCompress,
+        decompress: deflateInlineDecompress,
+        label: "Deflate + InlineDict (BPE)"
       },
       lz_compact: {
         compress: lzCompactCompress,
@@ -1672,6 +1852,11 @@
       ) {
         candidates.add("deflate_dict");
         reasons.push("ข้อความยาว/มี pattern พอสมควร จึงลอง Deflate + Dict (Auto profiles)");
+      }
+
+      if (stats.utf8Bytes >= 700 && stats.repeatedBigramRatio >= 0.55) {
+        candidates.add("deflate_inline");
+        reasons.push("ข้อความยาวและ bigram ซ้ำสูง จึงลอง Deflate + InlineDict (BPE) เพื่อ squeeze เพิ่ม");
       }
 
       if (stats.longestRun >= 4) {
@@ -2018,6 +2203,7 @@
     // QR Text alnum (Base45) - เพื่อให้ QR ใช้ Alphanumeric mode ได้ (capacity สูงกว่า byte-mode):
     // - Deflate Raw:     "QZ1D:" + <base45(deflate bytes)>
     // - Deflate+Dict:    "QZ1K<profileId>:" + <base45(deflate bytes)>
+    // - InlineDict(BPE): "QZ1U:" + <base45(blob bytes)>
 
     function buildRawQrPayload(text) {
       if (isAsciiOnly(text)) {
@@ -2059,6 +2245,16 @@
       const profileId = payload.profile ?? 1;
       const bytes = base64ToBytes(payload.data || "");
       return `QZ1K${profileId}:${base45Encode(bytes)}`;
+    }
+
+    function buildDeflateInlineQrPayload(payload) {
+      const blobBytes = base64ToBytes(payload.blob || "");
+      return `QZ1|U|${bytesToBase64Url(blobBytes)}`;
+    }
+
+    function buildDeflateInlineQrPayload45(payload) {
+      const blobBytes = base64ToBytes(payload.blob || "");
+      return `QZ1U:${base45Encode(blobBytes)}`;
     }
 
     function buildBinaryFrameSimple(methodChar, dataBytes) {
@@ -2125,6 +2321,15 @@
         return { qrText: bytesToBinaryString(out), bytesLen: out.length, displayText };
       }
 
+      if (result?.method === "deflate_inline" && result?.payload?.blob) {
+        const blobBytes = base64ToBytes(result.payload.blob);
+        const header = new Uint8Array([0x51, 0x5a, 0x31, 0x55]); // QZ1U
+        const out = new Uint8Array(header.length + blobBytes.length);
+        out.set(header, 0);
+        out.set(blobBytes, header.length);
+        return { qrText: bytesToBinaryString(out), bytesLen: out.length, displayText };
+      }
+
       if (result?.method === "lz_compact" && result?.payload?.data) {
         const bytes = base64ToBytes(result.payload.data);
         const frame = buildBinaryFrameSimple("L", bytes);
@@ -2151,6 +2356,9 @@
       }
       if (result?.method === "deflate_dict" && result?.payload?.data) {
         return mode === "text45" ? buildDeflateDictQrPayload45(result.payload) : buildDeflateDictQrPayload(result.payload);
+      }
+      if (result?.method === "deflate_inline" && result?.payload?.blob) {
+        return mode === "text45" ? buildDeflateInlineQrPayload45(result.payload) : buildDeflateInlineQrPayload(result.payload);
       }
       if (result?.method === "lz_compact" && result?.payload?.data) {
         return buildLzCompactQrPayload(result.payload);
@@ -2228,6 +2436,36 @@
       if (encodingMode === "byte") {
         return renderQrByteInto(container, payload, 220);
       }
+      if (encodingMode === "text45") {
+        // ใช้ qrcode-generator เพื่อบังคับ Alphanumeric mode จริง
+        if (typeof qrcode === "undefined") throw new Error("qrcode_generator_not_loaded");
+        const ecc = "M";
+        const qr = qrcode(0, ecc);
+        qr.addData(payload, "Alphanumeric");
+        qr.make();
+        const count = qr.getModuleCount();
+        const margin = 4;
+        const canvasModules = count + margin * 2;
+        const canvas = document.createElement("canvas");
+        canvas.width = canvasModules;
+        canvas.height = canvasModules;
+        canvas.style.width = "220px";
+        canvas.style.height = "220px";
+        canvas.style.imageRendering = "pixelated";
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = false;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvasModules, canvasModules);
+        ctx.fillStyle = "#000000";
+        for (let row = 0; row < count; row++) {
+          for (let col = 0; col < count; col++) {
+            if (qr.isDark(row, col)) ctx.fillRect(col + margin, row + margin, 1, 1);
+          }
+        }
+        container.innerHTML = "";
+        container.appendChild(canvas);
+        return;
+      }
       return renderQrTextInto(container, payload, 220);
     }
 
@@ -2269,6 +2507,34 @@
         wrapper.appendChild(chunk);
         if (encodingMode === "byte") {
           renderQrByteInto(qrHolder, chunkPayload, 160);
+        } else if (encodingMode === "text45") {
+          // alphanumeric mode (base45 payload)
+          if (typeof qrcode === "undefined") throw new Error("qrcode_generator_not_loaded");
+          const ecc = "M";
+          const qr = qrcode(0, ecc);
+          qr.addData(chunkPayload, "Alphanumeric");
+          qr.make();
+          const count = qr.getModuleCount();
+          const margin = 4;
+          const canvasModules = count + margin * 2;
+          const canvas = document.createElement("canvas");
+          canvas.width = canvasModules;
+          canvas.height = canvasModules;
+          canvas.style.width = "160px";
+          canvas.style.height = "160px";
+          canvas.style.imageRendering = "pixelated";
+          const ctx = canvas.getContext("2d");
+          ctx.imageSmoothingEnabled = false;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvasModules, canvasModules);
+          ctx.fillStyle = "#000000";
+          for (let row = 0; row < count; row++) {
+            for (let col = 0; col < count; col++) {
+              if (qr.isDark(row, col)) ctx.fillRect(col + margin, row + margin, 1, 1);
+            }
+          }
+          qrHolder.innerHTML = "";
+          qrHolder.appendChild(canvas);
         } else {
           renderQrTextInto(qrHolder, chunkPayload, 160);
         }
