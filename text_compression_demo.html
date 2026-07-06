@@ -23,73 +23,57 @@
       font-family: "Segoe UI", Tahoma, sans-serif;
       background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
       color: var(--text);
+      min-height: 100vh;
     }
     .container {
-      max-width: 1180px;
+      max-width: 1280px;
       margin: 0 auto;
       padding: 24px;
     }
-    .hero, .panel {
+    .hero {
       background: rgba(17, 24, 39, 0.92);
       border: 1px solid rgba(148, 163, 184, 0.18);
       border-radius: 18px;
       backdrop-filter: blur(8px);
       box-shadow: 0 12px 36px rgba(0, 0, 0, 0.24);
-    }
-    .hero {
-      padding: 24px;
+      padding: 24px 28px;
       margin-bottom: 20px;
     }
-    .hero h1 {
-      margin: 0 0 10px;
-      font-size: 30px;
-    }
-    .hero p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 20px;
-      align-items: start;
-    }
-    .panel {
-      padding: 20px;
+    .hero h1 { margin: 0 0 8px; font-size: 28px; }
+    .hero p { margin: 0; color: var(--muted); line-height: 1.6; font-size: 14px; }
+
+    /* ── Input Panel ── */
+    .input-panel {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 18px;
+      padding: 20px 24px;
       margin-bottom: 20px;
     }
-    .panel h2 {
-      margin: 0 0 12px;
-      font-size: 20px;
-    }
-    .muted {
-      color: var(--muted);
-    }
-    textarea, select, button, input {
-      font: inherit;
-    }
+    .input-panel h2 { margin: 0 0 12px; font-size: 18px; }
     textarea {
       width: 100%;
-      min-height: 280px;
+      min-height: 160px;
       resize: vertical;
-      padding: 16px;
-      border-radius: 14px;
+      padding: 14px;
+      border-radius: 12px;
       border: 1px solid var(--line);
       background: #020617;
       color: var(--text);
       line-height: 1.55;
+      font: inherit;
     }
     .controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 14px;
+      gap: 10px;
+      margin-top: 12px;
       align-items: center;
     }
-    select, button {
-      padding: 10px 14px;
-      border-radius: 12px;
+    select, button, input[type="number"], input[type="text"] {
+      font: inherit;
+      padding: 9px 13px;
+      border-radius: 10px;
       border: 1px solid var(--line);
       background: #0b1220;
       color: var(--text);
@@ -98,316 +82,499 @@
     button.primary {
       background: linear-gradient(135deg, #0369a1, #2563eb);
       border-color: transparent;
+      font-weight: 600;
     }
-    button:hover {
-      filter: brightness(1.06);
-    }
+    button:hover { filter: brightness(1.08); }
     .sample-buttons {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 12px;
+      gap: 8px;
+      margin-top: 10px;
     }
     .sample-buttons button {
-      background: #111827;
-    }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-top: 14px;
-    }
-    .stat {
-      background: #0b1220;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px;
-    }
-    .stat .label {
-      color: var(--muted);
+      background: rgba(255,255,255,0.05);
       font-size: 13px;
-      margin-bottom: 6px;
+      padding: 6px 12px;
     }
-    .stat .value {
-      font-size: 22px;
-      font-weight: 700;
-      word-break: break-word;
+
+    /* ── Tabs ── */
+    .tabs-wrap {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 18px;
+      overflow: hidden;
     }
-    .result-list {
-      display: grid;
-      gap: 12px;
-      margin-top: 14px;
-    }
-    .result-card {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px;
-      background: #0b1220;
-    }
-    .result-card.best {
-      border-color: rgba(34, 197, 94, 0.75);
-      box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.28);
-    }
-    .row {
+    .tab-bar {
       display: flex;
-      justify-content: space-between;
-      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(15, 23, 42, 0.7);
+      overflow-x: auto;
+    }
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 14px 22px;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      display: flex;
       align-items: center;
+      gap: 7px;
+    }
+    .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: rgba(56, 189, 248, 0.07);
+    }
+    .tab-icon { font-size: 16px; }
+    .tab-content { display: none; padding: 24px; }
+    .tab-content.active { display: block; }
+
+    /* ── Best Result Tab ── */
+    .best-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
     }
+    .best-title { font-size: 22px; font-weight: 700; }
     .badge {
-      padding: 4px 10px;
+      padding: 4px 12px;
       border-radius: 999px;
       font-size: 12px;
       border: 1px solid var(--line);
       color: var(--muted);
+      font-weight: 500;
     }
-    .badge.good { color: var(--good); border-color: rgba(34, 197, 94, 0.5); }
-    .badge.warn { color: var(--warn); border-color: rgba(245, 158, 11, 0.5); }
-    .badge.bad { color: var(--bad); border-color: rgba(239, 68, 68, 0.5); }
+    .badge.good { color: var(--good); border-color: rgba(34,197,94,0.5); background: rgba(34,197,94,0.08); }
+    .badge.warn { color: var(--warn); border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.08); }
+    .badge.bad  { color: var(--bad);  border-color: rgba(239,68,68,0.5);  background: rgba(239,68,68,0.08);  }
+    .badge.info { color: var(--accent); border-color: rgba(56,189,248,0.5); background: rgba(56,189,248,0.08); }
+
+    .summary { line-height: 1.75; color: var(--muted); font-size: 14px; }
+    .summary strong { color: var(--text); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      background: #0b1220;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 16px;
+      transition: border-color 0.2s;
+    }
+    .stat-card:hover { border-color: rgba(56,189,248,0.4); }
+    .stat-card .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .stat-card .value { font-size: 20px; font-weight: 700; word-break: break-word; }
+    .stat-card.highlight { border-color: rgba(34,197,94,0.5); background: rgba(34,197,94,0.05); }
+    .stat-card.highlight .value { color: var(--good); }
+
     pre {
       white-space: pre-wrap;
       word-break: break-word;
       background: #020617;
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 12px;
+      padding: 12px 14px;
       color: #cbd5e1;
-      max-height: 200px;
+      max-height: 220px;
       overflow: auto;
       margin: 12px 0 0;
-    }
-    .summary {
-      line-height: 1.7;
-    }
-    .small {
       font-size: 13px;
-      color: var(--muted);
     }
-    .qr-panel {
-      display: grid;
-      gap: 14px;
-      margin-top: 14px;
-    }
-    .qr-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-    }
-    .qr-box {
-      min-height: 220px;
-      display: grid;
-      place-items: center;
-      padding: 16px;
+    .small { font-size: 13px; color: var(--muted); }
+
+    /* ── Analysis Table Tab ── */
+    .table-wrap {
+      overflow-x: auto;
       border-radius: 14px;
       border: 1px solid var(--line);
-      background: #020617;
+      margin-top: 4px;
     }
-    .qr-box img,
-    .qr-box canvas {
-      background: white;
-      padding: 12px;
-      border-radius: 12px;
-      max-width: 100%;
-      height: auto;
-    }
-    .qr-multi {
+    table {
       width: 100%;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
+      border-collapse: collapse;
+      font-size: 13.5px;
     }
-    .qr-chunk {
-      display: grid;
-      gap: 8px;
-      justify-items: center;
-      align-content: start;
+    thead th {
+      background: #0b1220;
+      padding: 12px 14px;
+      text-align: left;
       color: var(--muted);
+      font-weight: 600;
       font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--line);
     }
-    .qr-chunk canvas,
-    .qr-chunk img {
-      width: 100%;
-      max-width: 160px;
-      padding: 8px;
+    tbody tr {
+      border-bottom: 1px solid rgba(51,65,85,0.5);
+      transition: background 0.15s;
     }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+    tbody tr.winner { background: rgba(34,197,94,0.07); }
+    tbody tr.winner:hover { background: rgba(34,197,94,0.11); }
+    tbody td {
+      padding: 11px 14px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+      background: #1f2937;
+      color: var(--muted);
+    }
+    .rank-badge.gold { background: rgba(251,191,36,0.2); color: #fbbf24; }
+    .rank-badge.silver { background: rgba(148,163,184,0.2); color: #94a3b8; }
+    .rank-badge.bronze { background: rgba(180,83,9,0.2); color: #b45309; }
+
+    .bar-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bar-bg {
+      flex: 1;
+      height: 6px;
+      background: #1f2937;
+      border-radius: 3px;
+      min-width: 60px;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #0369a1, #38bdf8);
+      transition: width 0.4s;
+    }
+    .bar-fill.good { background: linear-gradient(90deg, #065f46, #22c55e); }
+    .bar-fill.warn { background: linear-gradient(90deg, #92400e, #f59e0b); }
+    .bar-fill.bad  { background: linear-gradient(90deg, #7f1d1d, #ef4444); }
+
+    /* ── Chart Tab ── */
+    .chart-section { margin-bottom: 28px; }
+    .chart-section h3 { margin: 0 0 14px; font-size: 16px; color: var(--text); }
+    .chart-container {
+      background: #0b1220;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      position: relative;
+      height: 280px;
+    }
+
+    /* ── QR Tab ── */
     .qr-compare {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 4px;
     }
     .qr-card {
       background: #0b1220;
       border: 1px solid var(--line);
       border-radius: 14px;
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .qr-card h3 { margin: 0; font-size: 15px; }
+    .qr-box {
+      min-height: 200px;
+      display: grid;
+      place-items: center;
       padding: 14px;
-      display: grid;
-      gap: 10px;
-    }
-    .qr-card h3 {
-      margin: 0;
-      font-size: 16px;
-    }
-    .ref-tools {
-      display: grid;
-      gap: 10px;
-    }
-    .ref-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .ref-row input {
-      flex: 1;
-      min-width: 180px;
-      padding: 10px 12px;
       border-radius: 12px;
       border: 1px solid var(--line);
       background: #020617;
-      color: var(--text);
     }
-    .payload-meta {
-      display: grid;
+    .qr-box img, .qr-box canvas {
+      background: white;
+      padding: 10px;
+      border-radius: 10px;
+      max-width: 100%;
+    }
+    .qr-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    .ref-tools { display: grid; gap: 10px; }
+    .ref-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .ref-row input {
+      flex: 1;
+      min-width: 180px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #020617;
+      color: var(--text);
+      font: inherit;
+    }
+    .payload-meta { display: grid; gap: 8px; margin-top: 16px; }
+
+    /* ── Result Cards (inside Best tab) ── */
+    .result-list { display: grid; gap: 10px; margin-top: 20px; }
+    .result-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: rgba(11,18,32,0.8);
+      transition: border-color 0.2s;
+    }
+    .result-card.best {
+      border-color: rgba(34,197,94,0.6);
+      box-shadow: 0 0 0 1px rgba(34,197,94,0.2), 0 4px 16px rgba(34,197,94,0.08);
+    }
+    .result-card .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
     }
-    code {
-      font-family: Consolas, "Courier New", monospace;
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--muted);
     }
-    @media (max-width: 900px) {
-      .grid { grid-template-columns: 1fr; }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { margin: 0; font-size: 15px; }
+
+    code { font-family: Consolas, "Courier New", monospace; }
+
+    @media (max-width: 700px) {
+      .tab-btn { padding: 12px 14px; font-size: 13px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <section class="hero">
-      <h1>เดโมบีบอัดข้อความแบบ Lossless</h1>
-      <p>
-        หน้านี้จะวิเคราะห์สถิติของข้อความก่อน จากนั้นลองบีบอัดด้วย <code>Raw</code>,
-        <code>RLE</code>, <code>Huffman</code> และ <code>LZ78</code> แล้วเลือกผลที่สั้นที่สุดแบบอัตโนมัติ
-        พร้อมตรวจว่าคลายกลับได้ตรงกับข้อความเดิม 100% ประเมินจำนวน <code>token</code> ก่อน-หลัง
-        และมี <code>Auto Selector v2</code> ที่เลือกโปรไฟล์จากสถิติของข้อความก่อนตัดสินจากขนาด payload สำหรับ QR จริง
-      </p>
+      <h1>🗜️ เดโมบีบอัดข้อความแบบ Lossless</h1>
+      <p>วิเคราะห์สถิติข้อความ → ลองบีบอัดหลายวิธี → เลือกผลที่ดีที่สุดอัตโนมัติ พร้อมตรวจ lossless 100% ประเมิน token และ scanability สำหรับ QR Code จริง</p>
     </section>
 
-    <div class="grid">
-      <div>
-        <section class="panel">
-          <h2>ป้อนข้อความ</h2>
-          <textarea id="inputText" placeholder="ลองวางข้อความซ้ำ ๆ หรือยาว ๆ เช่น log, paragraph, code, หรือคำซ้ำหลายครั้ง"></textarea>
-
-          <div class="controls">
-            <select id="modeSelect">
-              <option value="auto">Auto Select</option>
-              <option value="raw">Raw</option>
-              <option value="rle">RLE</option>
-              <option value="huffman">Huffman</option>
-              <option value="fixed_num">Fixed NUM</option>
-              <option value="fixed_en">Fixed EN</option>
-              <option value="fixed_mixed">Fixed MIX</option>
-              <option value="deflate">Deflate Raw</option>
-              <option value="deflate_dict">Deflate + Dict (Auto)</option>
-              <option value="deflate_inline">Deflate + InlineDict (BPE)</option>
-              <option value="lz_compact">LZ Compact</option>
-              <option value="lz78">LZ78</option>
-            </select>
-            <select id="qrEncodingSelect" title="โหมดการเข้ารหัสข้อมูลลง QR">
-              <option value="byte">QR Byte mode (ลด overhead)</option>
-              <option value="text">QR Text mode (คัดลอกได้)</option>
-              <option value="text45">QR Text alnum (Base45)</option>
-            </select>
-            <select id="autoObjectiveSelect" title="เกณฑ์เลือกผลลัพธ์ (โหมด Auto)">
-              <option value="bytes">สั้นสุด (bytes-first)</option>
-              <option value="scan">สแกนง่ายสุด (scanability-first)</option>
-              <option value="density">คุมความหนาแน่น (threshold)</option>
-            </select>
-            <input id="densityThresholdInput" type="number" min="0.6" max="0.95" step="0.01" value="0.82" title="threshold ความหนาแน่น (utilization) เช่น 0.82 = 82%" />
-            <button class="primary" id="runBtn">วิเคราะห์และบีบอัด</button>
-            <button id="clearBtn">ล้าง</button>
-          </div>
-
-          <div class="sample-buttons">
-            <button data-sample="thai">ตัวอย่างข้อความไทย</button>
-            <button data-sample="english">ตัวอย่างข้อความอังกฤษ</button>
-            <button data-sample="repeated">ตัวอย่างซ้ำเยอะ</button>
-            <button data-sample="code">ตัวอย่างโค้ด</button>
-          </div>
-        </section>
-
-        <section class="panel">
-          <h2>ผลการเลือกอัตโนมัติ</h2>
-          <div id="autoSummary" class="summary muted">ยังไม่มีข้อมูล</div>
-          <div class="stats" id="topStats"></div>
-        </section>
+    <!-- Input Panel -->
+    <div class="input-panel">
+      <h2>📝 ป้อนข้อความ</h2>
+      <textarea id="inputText" placeholder="วางข้อความที่ต้องการบีบอัด เช่น log, paragraph, รายงาน, โค้ด หรือข้อความซ้ำๆ..."></textarea>
+      <div class="controls">
+        <select id="modeSelect">
+          <option value="auto">Auto Select</option>
+          <option value="raw">Raw</option>
+          <option value="rle">RLE</option>
+          <option value="huffman">Huffman</option>
+          <option value="fixed_num">Fixed NUM</option>
+          <option value="fixed_en">Fixed EN</option>
+          <option value="fixed_mixed">Fixed MIX</option>
+          <option value="deflate">Deflate Raw</option>
+          <option value="deflate_dict">Deflate + Dict (Auto)</option>
+          <option value="deflate_inline">Deflate + InlineDict (BPE)</option>
+          <option value="lz_compact">LZ Compact</option>
+          <option value="lz78">LZ78</option>
+          <option value="arithmetic">Arithmetic Coding ✨</option>
+        </select>
+        <select id="qrEncodingSelect" title="โหมดการเข้ารหัสข้อมูลลง QR">
+          <option value="byte">QR Byte mode (ลด overhead)</option>
+          <option value="text">QR Text mode (คัดลอกได้)</option>
+          <option value="text45">QR Text alnum (Base45)</option>
+        </select>
+        <select id="autoObjectiveSelect" title="เกณฑ์เลือกผลลัพธ์ (โหมด Auto)">
+          <option value="bytes">สั้นสุด (bytes-first)</option>
+          <option value="scan">สแกนง่ายสุด (scanability-first)</option>
+          <option value="density">คุมความหนาแน่น (threshold)</option>
+        </select>
+        <input id="densityThresholdInput" type="number" min="0.6" max="0.95" step="0.01" value="0.82" title="threshold ความหนาแน่น" />
+        <button class="primary" id="runBtn">⚡ วิเคราะห์และบีบอัด</button>
+        <button id="clearBtn">ล้าง</button>
       </div>
-
-      <div>
-        <section class="panel">
-          <h2>ผลลัพธ์แต่ละอัลกอริทึม</h2>
-          <div id="resultList" class="result-list"></div>
-        </section>
-
-        <section class="panel">
-          <h2>ข้อความที่คลายกลับ</h2>
-          <div class="small">เอาไว้ตรวจว่า lossless จริงหรือไม่</div>
-          <pre id="decodedView">ยังไม่มีข้อมูล</pre>
-        </section>
-
-        <section class="panel">
-          <h2>QR Code</h2>
-          <div class="small">เทียบ QR จากข้อความตรง ๆ กับ QR จากผลบีบอัดที่ชนะในหน้าเดียว</div>
-          <div class="qr-panel">
-            <div class="qr-actions">
-              <button class="primary" id="generateQrBtn">สร้าง QR เทียบกัน</button>
-              <button id="downloadCompressedQrBtn">ดาวน์โหลดแบบบีบอัด</button>
-              <button id="downloadRawQrBtn">ดาวน์โหลดแบบไม่ย่อ</button>
-              <button id="generateMemberQrBtn">สร้าง QR สมาชิก (สั้นสุด)</button>
-            </div>
-            <div id="qrStatus" class="small">ยังไม่ได้สร้าง QR</div>
-            <div class="qr-compare">
-              <div class="qr-card">
-                <h3>QR แบบไม่ย่อ</h3>
-                <div id="rawQrMeta" class="small">ยังไม่มีข้อมูล</div>
-                <div id="rawQrBox" class="qr-box">ยังไม่มี QR</div>
-              </div>
-              <div class="qr-card">
-                <h3>QR แบบบีบอัด</h3>
-                <div id="compressedQrMeta" class="small">ยังไม่มีข้อมูล</div>
-                <div id="compressedQrBox" class="qr-box">ยังไม่มี QR</div>
-              </div>
-              <div class="qr-card">
-                <h3>QR สมาชิก (ref)</h3>
-                <div class="small">แนวคิด: สมาชิกสร้าง QR สั้นมาก โดยหลังบ้านเก็บข้อมูลไว้</div>
-                <div id="memberQrMeta" class="small">ยังไม่มีข้อมูล</div>
-                <div id="memberQrBox" class="qr-box">ยังไม่มี QR</div>
-                <div class="ref-tools">
-                  <div class="small">ทดลอง resolve ref (สแกนได้แม้ไม่ล็อกอิน ถ้าแอพ/เว็บเรียกหลังบ้านได้)</div>
-                  <div class="ref-row">
-                    <input id="refInput" placeholder="วาง QZR|<id> หรือ <id>" />
-                    <button id="resolveRefBtn">ดึงข้อมูล</button>
-                  </div>
-                  <pre id="refResultView">ยังไม่มีข้อมูล</pre>
-                </div>
-              </div>
-            </div>
-            <div class="payload-meta">
-              <div class="small">แยกให้ชัดว่าอะไรคือข้อมูลจากเอนจิ้น อะไรคือข้อมูลสุดท้ายที่เข้า QR และ decoder ควรรับตัวไหน</div>
-              <pre id="qrPayloadView">ยังไม่มีข้อมูล</pre>
-              <pre id="qrDecodeFlowView">ยังไม่มีข้อมูล</pre>
-            </div>
-          </div>
-        </section>
+      <div class="sample-buttons">
+        <button data-sample="thai">ตัวอย่างข้อความไทย</button>
+        <button data-sample="english">ตัวอย่างข้อความอังกฤษ</button>
+        <button data-sample="repeated">ตัวอย่างซ้ำเยอะ</button>
+        <button data-sample="code">ตัวอย่างโค้ด</button>
       </div>
     </div>
-  </div>
 
+    <!-- Tabs -->
+    <div class="tabs-wrap">
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="best">
+          <span class="tab-icon">🏆</span> ผลดีสุด
+        </button>
+        <button class="tab-btn" data-tab="analysis">
+          <span class="tab-icon">📊</span> วิเคราะห์ตาราง
+        </button>
+        <button class="tab-btn" data-tab="chart">
+          <span class="tab-icon">📈</span> กราฟเปรียบเทียบ
+        </button>
+        <button class="tab-btn" data-tab="qr">
+          <span class="tab-icon">📷</span> QR Code
+        </button>
+      </div>
+
+      <!-- TAB 1: Best Result -->
+      <div class="tab-content active" id="tab-best">
+        <div id="bestEmptyState" class="empty-state">
+          <div class="icon">🗜️</div>
+          <p>กด <strong>วิเคราะห์และบีบอัด</strong> เพื่อดูผลลัพธ์</p>
+        </div>
+        <div id="bestResultContent" style="display:none">
+          <div class="best-header">
+            <div class="best-title" id="bestTitle">—</div>
+            <span class="badge good" id="bestBadge">Lossless OK</span>
+            <span class="badge info" id="bestQrBadge">—</span>
+          </div>
+          <div id="autoSummary" class="summary"></div>
+          <div class="stats-grid" id="topStats"></div>
+          <div style="margin-top:20px">
+            <div class="small" style="margin-bottom:8px;color:var(--text);font-weight:600;">ข้อความที่คลายกลับ (lossless check)</div>
+            <pre id="decodedView">ยังไม่มีข้อมูล</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Analysis Table -->
+      <div class="tab-content" id="tab-analysis">
+        <div id="analysisEmptyState" class="empty-state">
+          <div class="icon">📊</div>
+          <p>ยังไม่มีข้อมูล — กดวิเคราะห์ก่อนครับ</p>
+        </div>
+        <div id="analysisContent" style="display:none">
+          <div class="table-wrap">
+            <table id="analysisTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Algorithm</th>
+                  <th>Payload (bytes)</th>
+                  <th>ลดได้</th>
+                  <th>Ratio</th>
+                  <th>Scanability</th>
+                  <th>QR ver</th>
+                  <th>แน่น%</th>
+                  <th>Token ลด</th>
+                  <th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody id="analysisTableBody"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:20px">
+            <div class="small" style="margin-bottom:8px;color:var(--text);font-weight:600;">สถิติข้อความ</div>
+            <div class="stats-grid" id="textStatsGrid"></div>
+          </div>
+          <div style="margin-top:20px">
+             <div class="small" style="margin-bottom:8px;color:var(--text);font-weight:600;">รายละเอียดแต่ละอัลกอริทึม</div>
+             <div id="resultList" class="result-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: Chart -->
+      <div class="tab-content" id="tab-chart">
+        <div id="chartEmptyState" class="empty-state">
+          <div class="icon">📈</div>
+          <p>ยังไม่มีข้อมูล — กดวิเคราะห์ก่อนครับ</p>
+        </div>
+        <div id="chartContent" style="display:none">
+          <div class="chart-section">
+            <h3>📦 ขนาด Payload สำหรับ QR (bytes) — ยิ่งน้อยยิ่งดี</h3>
+            <div class="chart-container">
+              <canvas id="chartBytes"></canvas>
+            </div>
+          </div>
+          <div class="chart-section">
+            <h3>👁️ Scanability Score — ยิ่งมากยิ่งดี (สแกนง่าย)</h3>
+            <div class="chart-container">
+              <canvas id="chartScan"></canvas>
+            </div>
+          </div>
+          <div class="chart-section">
+            <h3>🗜️ Compression Ratio (% ของเดิม) — ยิ่งน้อยยิ่งดี</h3>
+            <div class="chart-container">
+              <canvas id="chartRatio"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: QR Code -->
+      <div class="tab-content" id="tab-qr">
+        <div class="qr-actions">
+          <button class="primary" id="generateQrBtn">📷 สร้าง QR เทียบกัน</button>
+          <button id="downloadCompressedQrBtn">⬇ ดาวน์โหลดแบบบีบอัด</button>
+          <button id="downloadRawQrBtn">⬇ ดาวน์โหลดแบบไม่ย่อ</button>
+          <button id="generateMemberQrBtn">🔗 สร้าง QR สมาชิก</button>
+        </div>
+        <div id="qrStatus" class="small" style="margin-bottom:14px">ยังไม่ได้สร้าง QR</div>
+        <div class="qr-compare">
+          <div class="qr-card">
+            <h3>QR แบบไม่ย่อ</h3>
+            <div id="rawQrMeta" class="small">ยังไม่มีข้อมูล</div>
+            <div id="rawQrBox" class="qr-box">ยังไม่มี QR</div>
+          </div>
+          <div class="qr-card">
+            <h3>QR แบบบีบอัด</h3>
+            <div id="compressedQrMeta" class="small">ยังไม่มีข้อมูล</div>
+            <div id="compressedQrBox" class="qr-box">ยังไม่มี QR</div>
+          </div>
+          <div class="qr-card">
+            <h3>QR สมาชิก (ref)</h3>
+            <div class="small">เก็บข้อมูลหลังบ้าน QR สั้นมาก</div>
+            <div id="memberQrMeta" class="small">ยังไม่มีข้อมูล</div>
+            <div id="memberQrBox" class="qr-box">ยังไม่มี QR</div>
+            <div class="ref-tools">
+              <div class="small">ทดลอง resolve ref</div>
+              <div class="ref-row">
+                <input id="refInput" placeholder="วาง QZR|<id> หรือ <id>" />
+                <button id="resolveRefBtn">ดึงข้อมูล</button>
+              </div>
+              <pre id="refResultView">ยังไม่มีข้อมูล</pre>
+            </div>
+          </div>
+        </div>
+        <div class="payload-meta">
+          <div class="small" style="color:var(--text);font-weight:600;margin-top:8px">Payload Detail</div>
+          <pre id="qrPayloadView">ยังไม่มีข้อมูล</pre>
+          <pre id="qrDecodeFlowView">ยังไม่มีข้อมูล</pre>
+        </div>
+      </div>
+
+    </div><!-- end tabs-wrap -->
+  </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <script>
+<script>
+
     const inputText = document.getElementById("inputText");
     const modeSelect = document.getElementById("modeSelect");
     const qrEncodingSelect = document.getElementById("qrEncodingSelect");
@@ -608,6 +775,15 @@
       if (result.method?.startsWith("fixed_")) {
         return JSON.stringify({
           profile: result.payload.profile,
+          bitLength: result.payload.bitLength,
+          data: previewTextBlock(result.payload.data || "", 220)
+        }, null, 2);
+      }
+      if (result.method === "arithmetic") {
+        return JSON.stringify({
+          profile: "arithmetic",
+          symCount: result.payload.symCount,
+          tableEntries: (result.payload.table || []).length,
           bitLength: result.payload.bitLength,
           data: previewTextBlock(result.payload.data || "", 220)
         }, null, 2);
@@ -1816,6 +1992,211 @@
       return decoder.decode(utf8);
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // Arithmetic Coding (adaptive order-0 on Unicode codepoints)
+    // ─────────────────────────────────────────────────────────────
+    // ออกแบบให้: encode fractional bits ต่อ symbol → เข้าใกล้ entropy limit มากกว่า Huffman
+    // Format: { method:'arithmetic', data:'<base64>', symCount:N, table:[[cp,cnt],...] }
+    // QR payload text mode: QZ1|A|<symCount>|<base64url(table_deflate)>|<base64url(bitstream)>
+    // QR payload byte mode: QZ1A + uint16(symCount) + uint16(tableLen) + tableDeflate + bitstream
+
+    function arithmeticCompress(text) {
+      if (!text.length) return { method: 'arithmetic', data: '', symCount: 0, table: [] };
+
+      // Build frequency table on codepoints
+      const freq = new Map();
+      for (const ch of text) {
+        const cp = ch.codePointAt(0);
+        freq.set(cp, (freq.get(cp) || 0) + 1);
+      }
+
+      // Sort by codepoint for deterministic decode
+      const table = [...freq.entries()].sort((a, b) => a[0] - b[0]);
+      const total = text.length;
+
+      // Build cumulative ranges [0,1) using BigInt arithmetic for precision
+      // Scale: use denominator = total (integer arithmetic with BigInt)
+      // Range: [low, high) represented as BigInt numerators over `total`
+      const ranges = [];
+      let cum = 0n;
+      const bigTotal = BigInt(total);
+      for (const [cp, cnt] of table) {
+        const lo = cum;
+        const hi = cum + BigInt(cnt);
+        ranges.push({ cp, lo, hi });
+        cum = hi;
+      }
+      const cpToRange = new Map(ranges.map(r => [r.cp, r]));
+
+      // Encode using integer arithmetic with 64-bit scale
+      // We'll use a fixed-precision 32-bit integer coder for browser compatibility
+      const BITS = 30;
+      const FULL = 1 << BITS;           // 2^30
+      const HALF = FULL >>> 1;          // 2^29
+      const QTR  = FULL >>> 2;          // 2^28
+
+      let low = 0, high = FULL;
+      const bits = [];
+      let pending = 0;
+
+      function emitBit(b) {
+        bits.push(b);
+        while (pending > 0) {
+          bits.push(b ^ 1);
+          pending--;
+        }
+      }
+
+      for (const ch of text) {
+        const cp = ch.codePointAt(0);
+        const r = cpToRange.get(cp);
+        const range = high - low;
+        // narrow interval
+        high = low + Math.floor(range * Number(r.hi) / total);
+        low  = low + Math.floor(range * Number(r.lo) / total);
+
+        // renormalise
+        for (;;) {
+          if (high <= HALF) {
+            emitBit(0);
+            low  <<= 1;
+            high <<= 1;
+          } else if (low >= HALF) {
+            emitBit(1);
+            low  = (low  - HALF) << 1;
+            high = (high - HALF) << 1;
+          } else if (low >= QTR && high <= 3 * QTR) {
+            pending++;
+            low  = (low  - QTR) << 1;
+            high = (high - QTR) << 1;
+          } else {
+            break;
+          }
+        }
+      }
+
+      // Flush
+      pending++;
+      if (low < QTR) {
+        emitBit(0);
+      } else {
+        emitBit(1);
+      }
+
+      // Pack bits → bytes
+      const byteArr = [];
+      for (let i = 0; i < bits.length; i += 8) {
+        let b = 0;
+        for (let j = 0; j < 8; j++) {
+          b = (b << 1) | (bits[i + j] ?? 0);
+        }
+        byteArr.push(b);
+      }
+
+      return {
+        method: 'arithmetic',
+        data: bytesToBase64(Uint8Array.from(byteArr)),
+        bitLength: bits.length,
+        symCount: total,
+        table   // [[cp, cnt], ...]
+      };
+    }
+
+    function arithmeticDecompress(payload) {
+      const { data, bitLength, symCount, table } = payload;
+      if (!symCount || !data) return '';
+
+      const total = symCount;
+      const tableArr = table; // [[cp, cnt],...]
+
+      // Rebuild cumulative ranges
+      const ranges = [];
+      let cum = 0n;
+      const bigTotal = BigInt(total);
+      for (const [cp, cnt] of tableArr) {
+        const lo = cum;
+        const hi = cum + BigInt(cnt);
+        ranges.push({ cp, lo, hi, cnt: Number(cnt) });
+        cum = hi;
+      }
+
+      // Read bits
+      const rawBytes = base64ToBytes(data);
+      const bits = [];
+      for (const byte of rawBytes) {
+        for (let i = 7; i >= 0; i--) {
+          bits.push((byte >> i) & 1);
+        }
+      }
+
+      const BITS = 30;
+      const FULL = 1 << BITS;
+      const HALF = FULL >>> 1;
+      const QTR  = FULL >>> 2;
+
+      let low = 0, high = FULL;
+      let val = 0;
+      let bitPos = 0;
+
+      function readBit() {
+        if (bitPos < bits.length) return bits[bitPos++];
+        return 0;
+      }
+
+      // Init val with first BITS bits
+      for (let i = 0; i < BITS; i++) {
+        val = (val << 1) | readBit();
+      }
+
+      const out = [];
+      for (let s = 0; s < symCount; s++) {
+        // Find symbol: cumFreq * (val - low) / (high - low) in [0, total)
+        const range = high - low;
+        // scale = floor(((val - low + 1) * total - 1) / range)
+        const scaled = Math.floor(((val - low + 1) * total - 1) / range);
+        // Binary search in ranges
+        let lo2 = 0, hi2 = ranges.length - 1, idx = 0;
+        while (lo2 <= hi2) {
+          const mid = (lo2 + hi2) >> 1;
+          if (Number(ranges[mid].lo) <= scaled) {
+            idx = mid;
+            lo2 = mid + 1;
+          } else {
+            hi2 = mid - 1;
+          }
+        }
+        const r = ranges[idx];
+        out.push(String.fromCodePoint(r.cp));
+
+        // Update interval
+        high = low + Math.floor(range * Number(r.hi) / total);
+        low  = low + Math.floor(range * Number(r.lo) / total);
+
+        // Renormalise
+        for (;;) {
+          if (high <= HALF) {
+            low  <<= 1;
+            high <<= 1;
+            val  <<= 1;
+            val  |= readBit();
+          } else if (low >= HALF) {
+            low  = (low  - HALF) << 1;
+            high = (high - HALF) << 1;
+            val  = (val  - HALF) << 1;
+            val  |= readBit();
+          } else if (low >= QTR && high <= 3 * QTR) {
+            low  = (low  - QTR) << 1;
+            high = (high - QTR) << 1;
+            val  = (val  - QTR) << 1;
+            val  |= readBit();
+          } else {
+            break;
+          }
+        }
+      }
+      return out.join('');
+    }
+
     const compressors = {
       raw: { compress: rawCompress, decompress: rawDecompress, label: "Raw" },
       rle: { compress: rleCompress, decompress: rleDecompress, label: "RLE" },
@@ -1855,7 +2236,8 @@
         decompress: lzCompactDecompress,
         label: "LZ Compact"
       },
-      lz78: { compress: lz78Compress, decompress: lz78Decompress, label: "LZ78" }
+      lz78: { compress: lz78Compress, decompress: lz78Decompress, label: "LZ78" },
+      arithmetic: { compress: arithmeticCompress, decompress: arithmeticDecompress, label: "Arithmetic Coding" }
     };
 
     function selectAutoCandidates(stats, text) {
@@ -1919,6 +2301,12 @@
       if (stats.entropy <= 4.7 && stats.uniqueChars <= 90) {
         candidates.add("huffman");
         reasons.push("entropy ต่ำและจำนวนตัวอักษรไม่ซ้ำไม่สูงมาก จึงลอง Huffman แบบ dynamic");
+      }
+
+      // Arithmetic Coding: ดีกว่า Huffman เสมอ ลองเมื่อมี Thai หรือ entropy สูง
+      if (stats.thaiRatio >= 0.18 || (stats.uniqueChars >= 30 && stats.utf8Bytes >= 100)) {
+        candidates.add("arithmetic");
+        reasons.push("ลอง Arithmetic Coding เพื่อเข้าใกล้ entropy limit (fractional bits)");
       }
 
       return {
@@ -2243,6 +2631,7 @@
     // - Deflate Raw:     QZ1|D|<base64url(deflate bytes)>
     // - Deflate+Dict1:   QZ1|K|1|<base64url(deflate bytes)>
     // - LZ Compact:      QZ1|L|<base64url(binary token stream)>
+    // - Arithmetic:      QZ1|A|<symCount>|<base64url(table_json_deflate)>|<base64url(bitstream)>
     // Fallback (legacy): QZ1|J|<base64url(json)>
     //
     // QR Byte mode (ลด overhead จาก base64/url-safe):
@@ -2251,6 +2640,7 @@
     // - Deflate+Dict1:   "QZ1K" + <profileId:1> + <deflate bytes>
     // - LZ Compact:      "QZ1L" + <lz token bytes>
     // - Fixed Huffman:   "QZ1F" + <profileId:1> + <bitLength:uint16> + <bitstream bytes>
+    // - Arithmetic:      "QZ1A" + <symCount:uint16> + <tableLen:uint16> + <tableDeflate> + <bitstream>
     //
     // QR Text alnum (Base45) - เพื่อให้ QR ใช้ Alphanumeric mode ได้ (capacity สูงกว่า byte-mode):
     // - Deflate Raw:     "QZ1D:" + <base45(deflate bytes)>
@@ -2393,8 +2783,49 @@
         return { qrText: bytesToBinaryString(frame), bytesLen: frame.length, displayText };
       }
 
+      if (result?.method === "arithmetic" && result?.payload?.data) {
+        const frame = buildArithmeticBinaryFrame(result.payload);
+        return { qrText: bytesToBinaryString(frame), bytesLen: frame.length, displayText };
+      }
+
       // วิธีอื่น ๆ ยังใช้ text mode ไปก่อน (เพราะเป็น legacy/JSON)
       return { qrText: displayText, bytesLen: utf8Bytes(displayText), displayText };
+    }
+
+    // ─── Arithmetic QR payload builders ───
+    function buildArithmeticTextPayload(payload) {
+      // table: [[cp,cnt],...] → JSON → deflate → base64url
+      // format: QZ1|A|<symCount>|<base64url(tableDeflate)>|<base64url(bitstream)>
+      const tableJson = JSON.stringify(payload.table);
+      const tableBytes = encoder.encode(tableJson);
+      const tableDeflate = typeof pako !== 'undefined'
+        ? pako.deflateRaw(tableBytes, { level: 9 })
+        : tableBytes;
+      const tableB64 = bytesToBase64Url(tableDeflate);
+      const dataB64 = toBase64UrlFromBase64(payload.data || '');
+      return `QZ1|A|${payload.symCount}|${tableB64}|${dataB64}`;
+    }
+
+    function buildArithmeticBinaryFrame(payload) {
+      // QZ1A + uint16(symCount) + uint16(tableLen) + tableDeflate + bitstream
+      const tableJson = JSON.stringify(payload.table);
+      const tableBytes = encoder.encode(tableJson);
+      const tableDeflate = typeof pako !== 'undefined'
+        ? pako.deflateRaw(tableBytes, { level: 9 })
+        : tableBytes;
+      const dataBytes = base64ToBytes(payload.data || '');
+      const symCount = payload.symCount || 0;
+      const tableLen = tableDeflate.length;
+      const header = new Uint8Array([
+        0x51, 0x5a, 0x31, 0x41, // QZ1A
+        (symCount >> 8) & 0xff, symCount & 0xff,
+        (tableLen >> 8) & 0xff, tableLen & 0xff
+      ]);
+      const out = new Uint8Array(header.length + tableDeflate.length + dataBytes.length);
+      out.set(header, 0);
+      out.set(tableDeflate, header.length);
+      out.set(dataBytes, header.length + tableDeflate.length);
+      return out;
     }
 
     function buildCompressedQrPayload(result, encodingMode) {
@@ -2414,6 +2845,9 @@
       }
       if (result?.method === "lz_compact" && result?.payload?.data) {
         return buildLzCompactQrPayload(result.payload);
+      }
+      if (result?.method === "arithmetic" && result?.payload?.data) {
+        return buildArithmeticTextPayload(result.payload);
       }
       // For other algorithms in this demo, keep a compact legacy form.
       return `QZ1|J|${toBase64Url(result.serialized || "")}`;
@@ -2812,6 +3246,188 @@
 
     inputText.value = samples.repeated;
     runCompression();
-  </script>
+  
+    // ─── TAB SWITCHING LOGIC ───
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    window.__charts = window.__charts || {};
+
+    function renderCharts(results) {
+      const validResults = results.filter(r => r && r.ok);
+      const labels = validResults.map(r => r.label);
+      const colors = validResults.map(r => r.method === window.__qrzip_lastBest.method ? '#22c55e' : '#38bdf8');
+      
+      const destroyChart = (id) => {
+        if (window.__charts[id]) {
+          window.__charts[id].destroy();
+        }
+      };
+
+      const createChart = (id, label, data, yTitle, reverse=false) => {
+        destroyChart(id);
+        const ctx = document.getElementById(id).getContext('2d');
+        window.__charts[id] = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: label,
+              data: data,
+              backgroundColor: colors,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { 
+                beginAtZero: true, 
+                title: { display: true, text: yTitle, color: '#94a3b8' },
+                ticks: { color: '#94a3b8' },
+                grid: { color: 'rgba(148, 163, 184, 0.1)' }
+              },
+              x: {
+                ticks: { color: '#e5e7eb' },
+                grid: { display: false }
+              }
+            }
+          }
+        });
+      };
+
+      createChart('chartBytes', 'Payload (bytes)', validResults.map(r => r.finalPayloadBytes), 'Bytes');
+      createChart('chartScan', 'Scanability Score', validResults.map(r => r.scanability.score), 'Score');
+      createChart('chartRatio', 'Compression Ratio (%)', validResults.map(r => r.ratio), '%');
+    }
+
+    function renderAnalysisTable(results, stats) {
+      const tbody = document.getElementById('analysisTableBody');
+      tbody.innerHTML = '';
+      results.forEach((r, idx) => {
+        const isBest = r.method === window.__qrzip_lastBest.method;
+        const tr = document.createElement('tr');
+        if (isBest) tr.className = 'winner';
+        
+        let rankBadge = '';
+        if (idx === 0) rankBadge = '<span class="rank-badge gold">1</span>';
+        else if (idx === 1) rankBadge = '<span class="rank-badge silver">2</span>';
+        else if (idx === 2) rankBadge = '<span class="rank-badge bronze">3</span>';
+        else rankBadge = `<span class="rank-badge">${idx+1}</span>`;
+
+        const maxBytes = Math.max(...results.map(x => x.finalPayloadBytes));
+        const barWidth = Math.max(5, (r.finalPayloadBytes / maxBytes) * 100);
+        let barColor = 'good';
+        if (barWidth > 80) barColor = 'bad';
+        else if (barWidth > 50) barColor = 'warn';
+
+        const barHtml = `<div class="bar-inline">
+          <div style="width:50px">${r.finalPayloadBytes}</div>
+          <div class="bar-bg"><div class="bar-fill ${barColor}" style="width:${barWidth}%"></div></div>
+        </div>`;
+
+        const deltaBytes = r.savedBytes >= 0 ? `<span style="color:var(--good)">-${r.savedBytes}</span>` : `<span style="color:var(--bad)">+${Math.abs(r.savedBytes)}</span>`;
+        const deltaTokens = r.savedTokens >= 0 ? `<span style="color:var(--good)">-${r.savedTokens}</span>` : `<span style="color:var(--bad)">+${Math.abs(r.savedTokens)}</span>`;
+        const statBadge = r.ok ? '<span class="badge good">OK</span>' : '<span class="badge bad">Err</span>';
+
+        tr.innerHTML = `
+          <td>${rankBadge}</td>
+          <td style="font-weight:${isBest?'bold':'normal'}">${r.label}</td>
+          <td>${barHtml}</td>
+          <td>${deltaBytes}</td>
+          <td>${r.ratio.toFixed(2)}%</td>
+          <td>${r.scanability.score}</td>
+          <td>${r.scanability.version ? 'v'+r.scanability.version : '>40'}</td>
+          <td>${r.scanability.capacity ? Math.round(r.scanability.utilization*100)+'%' : '-'}</td>
+          <td>${deltaTokens}</td>
+          <td>${statBadge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const textStats = [
+        ["จำนวนตัวอักษร", stats.chars.toLocaleString()],
+        ["ขนาด UTF-8 เดิม", formatBytes(stats.utf8Bytes)],
+        ["โทเคนเดิม", stats.estimatedTokens.toLocaleString()],
+        ["ตัวอักษรไม่ซ้ำ", stats.uniqueChars.toLocaleString()],
+        ["ASCII ratio", formatPercent(stats.asciiRatio * 100)],
+        ["Thai ratio", formatPercent(stats.thaiRatio * 100)],
+        ["Entropy", stats.entropy.toFixed(3)],
+        ["คำที่ซ้ำ", formatPercent(stats.repeatedWordRatio * 100)],
+        ["bigram ซ้ำ", formatPercent(stats.repeatedBigramRatio * 100)],
+        ["run ยาวสุด", stats.longestRun.toLocaleString()]
+      ];
+      
+      const grid = document.getElementById('textStatsGrid');
+      grid.innerHTML = '';
+      textStats.forEach(([label, value]) => {
+        grid.innerHTML += `<div class="stat-card">
+          <div class="label">${label}</div>
+          <div class="value">${value}</div>
+        </div>`;
+      });
+    }
+
+    const originalRenderResults = renderResults;
+    const originalRenderTopStats = renderTopStats;
+    const originalRenderSummary = renderSummary;
+
+    // Override the render flow to update tabs and states
+    renderResults = function(results, bestMethod) {
+      originalRenderResults(results, bestMethod);
+      if(window.__qrzip_lastBest && window.__qrzip_lastResults) {
+        renderAnalysisTable(window.__qrzip_lastResults, analyzeText(inputText.value));
+        renderCharts(window.__qrzip_lastResults);
+      }
+      
+      document.getElementById('bestTitle').innerText = window.__qrzip_lastBest.label;
+      const bBadge = document.getElementById('bestBadge');
+      if(window.__qrzip_lastBest.savedBytes < 0) {
+        bBadge.className = 'badge warn';
+        bBadge.innerText = 'ใหญ่ขึ้นแต่ถูกต้อง';
+      } else {
+        bBadge.className = 'badge good';
+        bBadge.innerText = 'Lossless OK';
+      }
+      document.getElementById('bestQrBadge').innerText = `QR Version: ${window.__qrzip_lastBest.scanability.version ? 'v'+window.__qrzip_lastBest.scanability.version : '>v40'}`;
+      
+      // Hide empty states
+      document.getElementById('bestEmptyState').style.display = 'none';
+      document.getElementById('bestResultContent').style.display = 'block';
+      
+      document.getElementById('analysisEmptyState').style.display = 'none';
+      document.getElementById('analysisContent').style.display = 'block';
+      
+      document.getElementById('chartEmptyState').style.display = 'none';
+      document.getElementById('chartContent').style.display = 'block';
+      
+      // Auto-switch to best tab
+      document.querySelector('.tab-btn[data-tab="best"]').click();
+    };
+    
+    // intercept clearBtn to reset states
+    const oldClear = clearBtn.onclick || function(){};
+    clearBtn.addEventListener('click', () => {
+      document.getElementById('bestEmptyState').style.display = 'block';
+      document.getElementById('bestResultContent').style.display = 'none';
+      document.getElementById('analysisEmptyState').style.display = 'block';
+      document.getElementById('analysisContent').style.display = 'none';
+      document.getElementById('chartEmptyState').style.display = 'block';
+      document.getElementById('chartContent').style.display = 'none';
+      
+      document.getElementById('bestTitle').innerText = '—';
+      document.getElementById('bestQrBadge').innerText = '—';
+    });
+
+</script>
 </body>
 </html>
+

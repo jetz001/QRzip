@@ -521,6 +521,64 @@ function decodeFixedPayload(profileId, bitLength, dataB64Url) {
   return out;
 }
 
+// ─── Arithmetic Coding decoder ───
+function arithmeticDecode(symCount, tableArr, dataBytes) {
+  if (!symCount || !dataBytes.length) return '';
+  const total = symCount;
+
+  // Rebuild cumulative ranges
+  const ranges = [];
+  let cum = 0n;
+  for (const [cp, cnt] of tableArr) {
+    const lo = cum;
+    const hi = cum + BigInt(cnt);
+    ranges.push({ cp, lo, hi });
+    cum = hi;
+  }
+
+  // Read bits MSB-first
+  const bits = [];
+  for (const byte of dataBytes) {
+    for (let i = 7; i >= 0; i--) bits.push((byte >> i) & 1);
+  }
+
+  const BITS = 30;
+  const FULL = 1 << BITS;
+  const HALF = FULL >>> 1;
+  const QTR  = FULL >>> 2;
+
+  let low = 0, high = FULL, val = 0, bitPos = 0;
+  const readBit = () => bitPos < bits.length ? bits[bitPos++] : 0;
+
+  for (let i = 0; i < BITS; i++) val = (val << 1) | readBit();
+
+  const out = [];
+  for (let s = 0; s < symCount; s++) {
+    const range = high - low;
+    const scaled = Math.floor(((val - low + 1) * total - 1) / range);
+    let lo2 = 0, hi2 = ranges.length - 1, idx = 0;
+    while (lo2 <= hi2) {
+      const mid = (lo2 + hi2) >> 1;
+      if (Number(ranges[mid].lo) <= scaled) { idx = mid; lo2 = mid + 1; }
+      else hi2 = mid - 1;
+    }
+    const r = ranges[idx];
+    out.push(String.fromCodePoint(r.cp));
+    high = low + Math.floor(range * Number(r.hi) / total);
+    low  = low + Math.floor(range * Number(r.lo) / total);
+    for (;;) {
+      if (high <= HALF) {
+        low <<= 1; high <<= 1; val = (val << 1) | readBit();
+      } else if (low >= HALF) {
+        low = (low - HALF) << 1; high = (high - HALF) << 1; val = ((val - HALF) << 1) | readBit();
+      } else if (low >= QTR && high <= 3 * QTR) {
+        low = (low - QTR) << 1; high = (high - QTR) << 1; val = ((val - QTR) << 1) | readBit();
+      } else break;
+    }
+  }
+  return out.join('');
+}
+
 function decodeFixedFromBytes(profileKey, bitLength, dataBytes) {
   const tree = buildHuffmanTree(presetFrequencyMaps[profileKey?.toLowerCase()]);
   if (!tree) throw new Error("unknown_profile");
@@ -687,6 +745,23 @@ async function decodeQrzipPayload(payload) {
       const utf8 = inlineDictDecodeBytes(parsed.entriesBytes, restored);
       return { kind: "free_deflate_inline", payload, text: decoder.decode(utf8), meta: "free | deflate+inlineDict (byte-mode)" };
     }
+    if (method === "A") {
+      // QZ1A + uint16(symCount) + uint16(tableLen) + tableDeflate + bitstream
+      if (bytes.length < 8) throw new Error("invalid_arithmetic_frame");
+      const symCount = (bytes[4] << 8) | bytes[5];
+      const tableLen = (bytes[6] << 8) | bytes[7];
+      if (typeof pako === "undefined") throw new Error("pako_not_loaded");
+      const tableDeflate = bytes.slice(8, 8 + tableLen);
+      const bitstreamBytes = bytes.slice(8 + tableLen);
+      const tableJson = decoder.decode(pako.inflateRaw(tableDeflate));
+      const tableArr = JSON.parse(tableJson);
+      return {
+        kind: "free_arithmetic",
+        payload,
+        text: arithmeticDecode(symCount, tableArr, bitstreamBytes),
+        meta: "free | arithmetic coding (byte-mode)"
+      };
+    }
   }
 
   if (payload.startsWith("QZ1|T|")) {
@@ -729,6 +804,22 @@ async function decodeQrzipPayload(payload) {
       payload,
       text: decodeFixedPayload(profile, bitLength, data),
       meta: `free | fixed ${profile}`
+    };
+  }
+  if (payload.startsWith("QZ1|A|")) {
+    // QZ1|A|<symCount>|<base64url(tableDeflate)>|<base64url(bitstream)>
+    const parts = payload.split("|");
+    const symCount = Number(parts[2] || 0);
+    const tableDeflateBytes = base64UrlToBytes(parts[3] || "");
+    const bitstreamBytes = base64UrlToBytes(parts[4] || "");
+    if (typeof pako === "undefined") throw new Error("pako_not_loaded");
+    const tableJson = decoder.decode(pako.inflateRaw(tableDeflateBytes));
+    const tableArr = JSON.parse(tableJson);
+    return {
+      kind: "free_arithmetic",
+      payload,
+      text: arithmeticDecode(symCount, tableArr, bitstreamBytes),
+      meta: "free | arithmetic coding"
     };
   }
   throw new Error("unsupported_payload");
