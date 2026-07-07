@@ -197,7 +197,9 @@ async function initHomePage() {
   if (member) {
     if (regBtnNav) regBtnNav.style.display = 'none';
     if (regBtnBar) regBtnBar.style.display = 'none';
+    if ($("#memberWorkspaceBtn")) $("#memberWorkspaceBtn").style.display = 'inline-flex';
   } else {
+    if ($("#memberWorkspaceBtn")) $("#memberWorkspaceBtn").style.display = 'none';
     if (regBtnNav) {
       regBtnNav.style.display = 'inline-block';
       regBtnNav.addEventListener('click', () => { document.getElementById('userRegisterModal').style.display = 'flex'; });
