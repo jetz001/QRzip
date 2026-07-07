@@ -1222,7 +1222,7 @@ const DICT_PROFILES = [
     function evaluateMethod(method, text) {
       const engine = compressors[method];
       try {
-        const encodingMode = (typeof qrEncodingSelect !== "undefined" && qrEncodingSelect) ? qrEncodingSelect.value : "byte";
+        const encodingMode = (typeof window !== "undefined" && window.qrEncodingSelect) ? window.qrEncodingSelect.value : "text45";
         const payload = engine.compress(text);
         const serialized = serializePayload(payload);
         const decoded = engine.decompress(payload);
