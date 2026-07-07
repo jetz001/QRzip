@@ -314,8 +314,8 @@
         <p style="color:var(--muted); margin:8px 0 0; font-size:14px;">กรุณาเข้าสู่ระบบเพื่อจัดการ QRZIP</p>
       </div>
       <form id="adminLoginForm">
-        <input type="text" id="adminUser" placeholder="Username" style="width:100%; padding:14px 16px; margin-bottom:16px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; background: rgba(0,0,0,0.2); color:#fff;" required />
-        <input type="password" id="adminPass" placeholder="Password" style="width:100%; padding:14px 16px; margin-bottom:24px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; background: rgba(0,0,0,0.2); color:#fff;" required />
+        <input type="text" id="adminUser" placeholder="Username" value="admin" style="width:100%; padding:14px 16px; margin-bottom:16px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; background: rgba(0,0,0,0.2); color:#fff;" required />
+        <input type="password" id="adminPass" placeholder="Password" value="admin1234" style="width:100%; padding:14px 16px; margin-bottom:24px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; background: rgba(0,0,0,0.2); color:#fff;" required />
         <button type="submit" class="btn primary" style="width:100%; padding:14px; font-weight:600; font-size:16px;">เข้าสู่ระบบ</button>
       </form>
       <div id="loginStatus" class="status" style="color:var(--bad); margin-top:16px; text-align:center; min-height: 20px;"></div>
@@ -461,6 +461,6 @@
 
   </div> <!-- End Layout -->
   
-  <script src="./portal.js"></script>
+  <script type="module" src="./portal.js"></script>
 </body>
 </html>

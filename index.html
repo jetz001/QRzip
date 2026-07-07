@@ -310,6 +310,7 @@
       QRZIP
     </a>
     <div class="nav-links">
+      <button id="memberProfileBtn" class="btn-outline" style="display:none; cursor:pointer; background:var(--primary); color:#fff; border:none; margin-right:8px;">โปรไฟล์</button>
       <a href="./admin.html" class="btn-outline">Admin</a>
     </div>
   </header>
@@ -457,8 +458,48 @@
     });
   </script>
   
+  <div id="memberProfileModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:100; align-items:center; justify-content:center;">
+    <div class="modal" style="background:var(--surface); border-radius:16px; width:90%; max-width:800px; padding:24px; box-shadow:var(--shadow-lg);">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:20px; color:var(--text-main);">Profile & History</h3>
+        <button onclick="document.getElementById('memberProfileModal').style.display='none'" style="background:none; border:none; cursor:pointer; font-size:24px; color:var(--text-muted);">&times;</button>
+      </div>
+      
+      <div style="margin-bottom:24px; display:flex; gap:24px; align-items:center;">
+        <div style="flex:1;">
+          <div style="font-size:14px; color:var(--text-muted);">Member ID</div>
+          <div id="profileMemberId" style="font-weight:600; font-size:16px; color:var(--text-main);">-</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:14px; color:var(--text-muted);">Name</div>
+          <div id="profileMemberName" style="font-weight:600; font-size:16px; color:var(--text-main);">-</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:14px; color:var(--text-muted);">Plan</div>
+          <div id="profileMemberPlan" style="font-weight:600; font-size:16px; color:var(--primary);">-</div>
+        </div>
+      </div>
+      
+      <h4 style="margin:0 0 12px 0; color:var(--text-main);">ประวัติการสร้าง QR Code</h4>
+      <div style="max-height:400px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
+        <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:left;">
+          <thead style="background:#f1f5f9; position:sticky; top:0;">
+            <tr>
+              <th style="padding:12px; border-bottom:1px solid var(--border);">Date</th>
+              <th style="padding:12px; border-bottom:1px solid var(--border);">Mode</th>
+              <th style="padding:12px; border-bottom:1px solid var(--border);">Text / Payload</th>
+            </tr>
+          </thead>
+          <tbody id="profileHistoryTable">
+            <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted);">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Logic -->
   <script src="./qrzip_engine.js"></script>
-  <script type="module" src="./portal.js"></script>
+  <script src="./portal.js" type="module"></script>
 </body>
 </html>

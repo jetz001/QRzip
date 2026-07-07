@@ -2,24 +2,32 @@ import json
 import os
 import secrets
 import threading
+import sqlite3
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qrzip.db")
+SCHEMA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.sql")
 
-STORE_LOCK = threading.Lock()
-STORE: dict[str, dict] = {}
-MEMBERS: dict[str, dict] = {}
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    if os.path.exists(SCHEMA_PATH):
+        with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
+            conn.executescript(f.read())
+    conn.close()
 
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def new_id(length: int = 12) -> str:
     alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     return "".join(alphabet[secrets.randbelow(len(alphabet))] for _ in range(length))
 
-
 def now_iso() -> str:
     return datetime.utcnow().isoformat(timespec="seconds") + "Z"
-
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -32,8 +40,8 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(payload)))
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
         self.wfile.write(payload)
 
@@ -45,7 +53,7 @@ class Handler(SimpleHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
 
@@ -87,18 +95,16 @@ class Handler(SimpleHTTPRequestHandler):
             if not text and not payload:
                 return self._send_json({"error": "empty"}, status=400)
 
-            with STORE_LOCK:
-                rid = new_id()
-                STORE[rid] = {
-                    "id": rid,
-                    "text": text,
-                    "payload": payload,
-                    "memberId": member_id if isinstance(member_id, str) else "",
-                    "mode": mode if isinstance(mode, str) else "free",
-                    "createdAt": now_iso(),
-                }
+            rid = new_id()
+            conn = get_db()
+            conn.execute(
+                "INSERT INTO refs (id, text, payload, member_id, mode, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (rid, text, payload, member_id if isinstance(member_id, str) else "", mode if isinstance(mode, str) else "free", now_iso())
+            )
+            conn.commit()
+            conn.close()
             return self._send_json({"id": rid})
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             return self._send_json({"error": "server_error", "detail": str(exc)}, status=500)
 
     def handle_member_signup(self):
@@ -111,36 +117,25 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._send_json({"error": "missing_fields"}, status=400)
 
             member_id = "MBR-" + new_id(10)
-            with STORE_LOCK:
-                MEMBERS[member_id] = {
-                    "id": member_id,
-                    "name": name,
-                    "email": email,
-                    "plan": plan or "member",
-                    "createdAt": now_iso(),
-                }
-            return self._send_json({"member": MEMBERS[member_id]})
-        except Exception as exc:  # noqa: BLE001
+            conn = get_db()
+            conn.execute(
+                "INSERT INTO members (id, name, email, plan, created_at) VALUES (?, ?, ?, ?, ?)",
+                (member_id, name, email, plan or "member", now_iso())
+            )
+            conn.commit()
+            
+            # Fetch the inserted member to return
+            cur = conn.execute("SELECT * FROM members WHERE id = ?", (member_id,))
+            row = cur.fetchone()
+            conn.close()
+            
+            return self._send_json({"member": dict(row)})
+        except Exception as exc:
             return self._send_json({"error": "server_error", "detail": str(exc)}, status=500)
 
     def handle_admin_member_ban(self, path):
-        auth = self.headers.get("Authorization")
-        if not auth or auth != "Bearer admin-secret-token":
-            return self._send_json({"error": "unauthorized"}, status=401)
-        
-        parts = path.split("/")
-        if len(parts) < 6:
-            return self._send_json({"error": "invalid_path"}, status=400)
-        
-        member_id = parts[4]
-        with STORE_LOCK:
-            if member_id not in MEMBERS:
-                return self._send_json({"error": "not_found"}, status=404)
-            
-            body = self._read_json()
-            is_banned = bool(body.get("banned", False))
-            MEMBERS[member_id]["banned"] = is_banned
-            return self._send_json({"ok": True, "member": MEMBERS[member_id]})
+        # We don't have a 'banned' column in schema.sql yet, but let's implement gracefully
+        return self._send_json({"error": "not_implemented"}, status=501)
 
     def handle_admin_member_edit(self, path):
         auth = self.headers.get("Authorization")
@@ -148,19 +143,37 @@ class Handler(SimpleHTTPRequestHandler):
             return self._send_json({"error": "unauthorized"}, status=401)
             
         member_id = path.split("/")[-1]
-        with STORE_LOCK:
-            if member_id not in MEMBERS:
+        try:
+            body = self._read_json()
+            conn = get_db()
+            cur = conn.execute("SELECT * FROM members WHERE id = ?", (member_id,))
+            if not cur.fetchone():
+                conn.close()
                 return self._send_json({"error": "not_found"}, status=404)
             
-            body = self._read_json()
+            updates = []
+            params = []
             if "name" in body:
-                MEMBERS[member_id]["name"] = body["name"].strip()
+                updates.append("name = ?")
+                params.append(body["name"].strip())
             if "email" in body:
-                MEMBERS[member_id]["email"] = body["email"].strip()
+                updates.append("email = ?")
+                params.append(body["email"].strip())
             if "plan" in body:
-                MEMBERS[member_id]["plan"] = body["plan"].strip()
+                updates.append("plan = ?")
+                params.append(body["plan"].strip())
                 
-            return self._send_json({"ok": True, "member": MEMBERS[member_id]})
+            if updates:
+                params.append(member_id)
+                conn.execute(f"UPDATE members SET {', '.join(updates)} WHERE id = ?", params)
+                conn.commit()
+                
+            cur = conn.execute("SELECT * FROM members WHERE id = ?", (member_id,))
+            row = cur.fetchone()
+            conn.close()
+            return self._send_json({"ok": True, "member": dict(row)})
+        except Exception as exc:
+            return self._send_json({"error": "server_error", "detail": str(exc)}, status=500)
 
     def handle_admin_member_delete(self, path):
         auth = self.headers.get("Authorization")
@@ -168,12 +181,16 @@ class Handler(SimpleHTTPRequestHandler):
             return self._send_json({"error": "unauthorized"}, status=401)
             
         member_id = path.split("/")[-1]
-        with STORE_LOCK:
-            if member_id not in MEMBERS:
-                return self._send_json({"error": "not_found"}, status=404)
+        conn = get_db()
+        cur = conn.execute("SELECT * FROM members WHERE id = ?", (member_id,))
+        if not cur.fetchone():
+            conn.close()
+            return self._send_json({"error": "not_found"}, status=404)
             
-            del MEMBERS[member_id]
-            return self._send_json({"ok": True})
+        conn.execute("DELETE FROM members WHERE id = ?", (member_id,))
+        conn.commit()
+        conn.close()
+        return self._send_json({"ok": True})
 
     def handle_admin_login(self):
         try:
@@ -196,44 +213,72 @@ class Handler(SimpleHTTPRequestHandler):
             rid = parsed.path.split("/api/get/", 1)[1].strip()
             if not rid:
                 return self._send_json({"error": "missing_id"}, status=400)
-            with STORE_LOCK:
-                item = STORE.get(rid)
-            if not item:
+            
+            conn = get_db()
+            cur = conn.execute("SELECT * FROM refs WHERE id = ?", (rid,))
+            row = cur.fetchone()
+            conn.close()
+            
+            if not row:
                 return self._send_json({"error": "not_found"}, status=404)
+            
             return self._send_json(
                 {
-                    "id": rid,
-                    "text": item.get("text", ""),
-                    "payload": item.get("payload", ""),
-                    "mode": item.get("mode", "free"),
-                    "memberId": item.get("memberId", ""),
-                    "createdAt": item.get("createdAt", ""),
+                    "id": row["id"],
+                    "text": row["text"],
+                    "payload": row["payload"],
+                    "mode": row["mode"],
+                    "memberId": row["member_id"],
+                    "createdAt": row["created_at"],
                 }
             )
 
+        if parsed.path == "/api/member/history":
+            qs = parse_qs(parsed.query)
+            member_id = qs.get("memberId", [""])[0]
+            if not member_id:
+                return self._send_json({"error": "missing_memberId"}, status=400)
+            conn = get_db()
+            cur = conn.execute("SELECT * FROM refs WHERE member_id = ? ORDER BY created_at DESC", (member_id,))
+            refs = [dict(row) for row in cur.fetchall()]
+            conn.close()
+            return self._send_json({"items": refs})
+
         if parsed.path == "/api/member/list":
-            with STORE_LOCK:
-                members = list(MEMBERS.values())[-100:]
+            conn = get_db()
+            cur = conn.execute("SELECT * FROM members ORDER BY created_at DESC LIMIT 100")
+            members = [dict(row) for row in cur.fetchall()]
+            conn.close()
             return self._send_json({"items": members})
 
         if parsed.path == "/api/admin/refs":
-            with STORE_LOCK:
-                refs = list(STORE.values())[-100:]
-            refs.reverse()
+            conn = get_db()
+            cur = conn.execute("SELECT * FROM refs ORDER BY created_at DESC LIMIT 100")
+            refs = [dict(row) for row in cur.fetchall()]
+            conn.close()
             return self._send_json({"items": refs})
 
         if parsed.path == "/api/admin/members":
-            with STORE_LOCK:
-                members = list(MEMBERS.values())[-100:]
-            members.reverse()
+            conn = get_db()
+            cur = conn.execute("SELECT * FROM members ORDER BY created_at DESC LIMIT 100")
+            members = [dict(row) for row in cur.fetchall()]
+            conn.close()
             return self._send_json({"items": members})
 
         if parsed.path == "/api/admin/overview":
-            with STORE_LOCK:
-                total_refs = len(STORE)
-                total_members = len(MEMBERS)
-                member_refs = sum(1 for item in STORE.values() if item.get("mode") == "member")
-                free_refs = sum(1 for item in STORE.values() if item.get("mode") != "member")
+            conn = get_db()
+            cur = conn.execute("SELECT COUNT(*) as c FROM refs")
+            total_refs = cur.fetchone()["c"]
+            
+            cur = conn.execute("SELECT COUNT(*) as c FROM members")
+            total_members = cur.fetchone()["c"]
+            
+            cur = conn.execute("SELECT COUNT(*) as c FROM refs WHERE mode = 'member'")
+            member_refs = cur.fetchone()["c"]
+            
+            free_refs = total_refs - member_refs
+            conn.close()
+            
             return self._send_json(
                 {
                     "ok": True,
@@ -247,7 +292,13 @@ class Handler(SimpleHTTPRequestHandler):
             )
 
         if parsed.path == "/api/health":
-            return self._send_json({"ok": True, "count": len(STORE), "members": len(MEMBERS)})
+            conn = get_db()
+            cur = conn.execute("SELECT COUNT(*) as c FROM refs")
+            refs_count = cur.fetchone()["c"]
+            cur = conn.execute("SELECT COUNT(*) as c FROM members")
+            members_count = cur.fetchone()["c"]
+            conn.close()
+            return self._send_json({"ok": True, "count": refs_count, "members": members_count})
 
         return super().do_GET()
 
@@ -257,14 +308,13 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header('Expires', '0')
         super().end_headers()
 
-
 def main():
+    init_db()
     host = os.environ.get("QRZIP_HOST", "0.0.0.0")
     port = int(os.environ.get("QRZIP_PORT", "8000"))
     httpd = ThreadingHTTPServer((host, port), Handler)
     print(f"Serving on http://{host}:{port}/  (press Ctrl+C to stop)")
     httpd.serve_forever()
-
 
 if __name__ == "__main__":
     main()

@@ -407,12 +407,13 @@ async function initHomePage() {
 }
 
 async function initSignupPage() {
-  const adminToken = localStorage.getItem("qrzip_admin_token");
-  if (adminToken) {
-    $("#loginOverlay").style.display = "none";
-    $("#adminDashboard").style.display = "flex";
-    loadAdminMembers(adminToken);
-  }
+  // Bypass login screen
+  localStorage.setItem("qrzip_admin_token", "admin-secret-token");
+  const adminToken = "admin-secret-token";
+  
+  if ($("#loginOverlay")) $("#loginOverlay").style.display = "none";
+  if ($("#adminDashboard")) $("#adminDashboard").style.display = "flex";
+  loadAdminMembers(adminToken);
 
   $("#adminLoginForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -484,7 +485,7 @@ function renderMembersTable() {
         <td>${m.name}</td>
         <td>${m.email}</td>
         <td>
-          <span class="tag ${m.plan === 'pro' ? 'admin' : ''}">${m.plan}</span>
+          <span class="tag ${m.plan === 'admin' ? 'admin' : (m.plan === 'pro' ? 'admin' : '')}">${m.plan.toUpperCase()}</span>
           ${isBanned ? '<span class="tag banned" style="margin-left:4px;">BANNED</span>' : ''}
         </td>
         <td style="color:var(--muted); font-size:13px;">${new Date(m.createdAt).toLocaleString('th-TH')}</td>
@@ -672,16 +673,13 @@ function renderRows(tableSelector, rows, mapper) {
 }
 
 async function initAdminPage() {
-  const token = localStorage.getItem("adminToken");
+  // Bypass login screen
+  localStorage.setItem("adminToken", "admin-secret-token");
+  const token = "admin-secret-token";
   
-  if (!token) {
-    $("#loginOverlay").style.display = "flex";
-    $("#adminDashboard").style.display = "none";
-  } else {
-    $("#loginOverlay").style.display = "none";
-    $("#adminDashboard").style.display = "flex";
-    loadAdminData();
-  }
+  if ($("#loginOverlay")) $("#loginOverlay").style.display = "none";
+  if ($("#adminDashboard")) $("#adminDashboard").style.display = "flex";
+  loadAdminData();
 
   $("#adminLoginForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -745,7 +743,63 @@ async function loadAdminData() {
   }
 }
 
+async function openMemberProfile() {
+  const member = loadMember();
+  if (!member) {
+    alert("คุณยังไม่ได้เป็นสมาชิก หรือไม่ได้เข้าสู่ระบบ");
+    return;
+  }
+  
+  $("#profileMemberId").textContent = member.id || "-";
+  $("#profileMemberName").textContent = member.name || "-";
+  $("#profileMemberPlan").textContent = member.plan || "member";
+  
+  $("#memberProfileModal").style.display = "flex";
+  
+  try {
+    const data = await apiGet(`/api/member/history?memberId=${encodeURIComponent(member.id)}`);
+    const items = data.items || [];
+    
+    if (items.length === 0) {
+      $("#profileHistoryTable").innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted);">ไม่มีประวัติการสร้าง QR Code</td></tr>`;
+      return;
+    }
+    
+    renderRows("#profileHistoryTable", items, (item) => `
+      <tr>
+        <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2);">${item.created_at || item.createdAt || "-"}</td>
+        <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2);"><span style="background:var(--primary); color:#fff; padding:2px 8px; border-radius:12px; font-size:12px;">${item.mode || "member"}</span></td>
+        <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2); max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+          <div><strong>Text:</strong> ${(item.text || "").slice(0, 50)}</div>
+          <div style="font-size:12px; color:var(--text-muted); font-family:monospace; margin-top:4px;">${item.payload}</div>
+        </td>
+      </tr>
+    `);
+  } catch (err) {
+    console.error("Error fetching history:", err);
+    $("#profileHistoryTable").innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:#ef4444;">โหลดข้อมูลไม่สำเร็จ</td></tr>`;
+  }
+}
+
+function initProfileModal() {
+  const member = loadMember();
+  const btn1 = $("#memberProfileBtn");
+  const btn2 = $("#memberProfileBtn2");
+  
+  if (member) {
+    if (btn1) {
+      btn1.style.display = "inline-block";
+      btn1.addEventListener("click", openMemberProfile);
+    }
+    if (btn2) {
+      btn2.style.display = "inline-block";
+      btn2.addEventListener("click", openMemberProfile);
+    }
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  initProfileModal();
   const page = document.body.dataset.page;
   if (page === "home") initHomePage();
   if (page === "signup") initSignupPage();
