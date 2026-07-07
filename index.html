@@ -310,9 +310,7 @@
       QRZIP
     </a>
     <div class="nav-links">
-      <a href="./lab.html">Lab</a>
-      <a href="./member.html">Member</a>
-      <a href="./signup.html" class="btn-outline">Sign Up</a>
+      <a href="./admin.html" class="btn-outline">Admin</a>
     </div>
   </header>
 
@@ -335,11 +333,22 @@
         <textarea id="homeText" placeholder="Paste your text here (logs, paragraphs, data)..."></textarea>
         <button id="freeCreateBtn" class="btn-massive">Generate Compressed QR</button>
         
-        <div id="result-create" class="result-area hidden">
-          <div id="freeStatus" class="status"></div>
-          <div id="freeQr" class="qr-container">Loading...</div>
+        <div id="result-create" class="result-area hidden" style="align-items: stretch;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%;">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <div class="status" style="font-weight:700; color:var(--text-muted); margin-bottom:8px;">❌ Raw Text QR (แบบเดิม)</div>
+              <div id="rawStatus" class="status" style="font-size:13px; margin-bottom:8px;"></div>
+              <div id="rawQr" class="qr-container" style="background:#f1f5f9; filter: grayscale(100%); opacity: 0.8;"></div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <div class="status" style="font-weight:700; color:var(--primary); margin-bottom:8px;">✨ Compressed QRZIP</div>
+              <div id="freeStatus" class="status" style="font-size:13px; margin-bottom:8px;"></div>
+              <div id="freeQr" class="qr-container" style="border: 2px solid var(--primary); box-shadow: 0 10px 15px -3px rgba(59,130,246,0.2);">Loading...</div>
+              <div id="modelName" class="status" style="font-size:12px; font-weight:600; color:var(--primary); margin-top:8px;"></div>
+            </div>
+          </div>
           <div style="width:100%; margin-top: 16px;">
-            <div class="status" style="text-align:left;font-weight:600;color:var(--text-main);margin-bottom:4px;">Payload:</div>
+            <div class="status" style="text-align:left;font-weight:600;color:var(--text-main);margin-bottom:4px;">QRZIP Payload:</div>
             <pre id="freePayload"></pre>
           </div>
         </div>
@@ -347,6 +356,16 @@
 
       <!-- Tab 2: Scan QR -->
       <div id="tab-scan" class="tab-content">
+        <div style="display:flex; gap:12px; margin-bottom:16px;">
+          <button id="cameraScanBtn" class="btn-outline" style="flex:1; padding:12px; font-weight:600; font-size:16px; cursor:pointer; background:var(--surface); border:1px solid var(--border); border-radius:8px; transition:all 0.2s;">📷 Scan with Camera</button>
+        </div>
+        <div id="cameraContainer" style="display:none; text-align:center; margin-bottom:16px;">
+          <video id="cameraVideo" playsinline style="width:100%; max-width:400px; border-radius:12px; border:2px solid var(--border); background:#000;"></video>
+          <div style="margin-top:8px;">
+            <button id="cameraStopBtn" style="padding:8px 16px; font-size:14px; cursor:pointer; background:transparent; border:1px solid #ef4444; color:#ef4444; border-radius:8px;">Stop Camera</button>
+          </div>
+        </div>
+
         <label id="scanDropzone" class="dropzone">
           <input id="scanQrFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
           <div class="drop-icon">📥</div>
@@ -364,8 +383,9 @@
           
           <div style="width:100%; display:grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
             <div>
-              <div class="status" style="text-align:left;font-weight:600;color:var(--text-main);margin-bottom:4px;">Raw Payload</div>
-              <pre id="scanPayload"></pre>
+              <div class="status" style="text-align:left;font-weight:600;color:var(--text-main);margin-bottom:4px;">Raw Payload (สามารถวางโค้ดที่นี่เพื่อถอดรหัสได้โดยตรง)</div>
+              <textarea id="scanPayloadInput" style="height: 100px; font-family: monospace; font-size: 12px;"></textarea>
+              <button id="manualDecodeBtn" class="btn-outline" style="width: 100%; margin-top: 8px;">Decode Payload</button>
             </div>
             <div>
               <div class="status" style="text-align:left;font-weight:600;color:var(--text-main);margin-bottom:4px;">Decoded Text</div>
@@ -404,6 +424,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   
   <script>
     function switchTab(tabId, event) {
@@ -433,6 +454,7 @@
   </script>
   
   <!-- Main Logic -->
+  <script src="./qrzip_engine.js"></script>
   <script type="module" src="./portal.js"></script>
 </body>
 </html>

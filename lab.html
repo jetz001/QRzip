@@ -6,44 +6,230 @@
   <title>QRZIP Lab</title>
   <link rel="stylesheet" href="./portal.css" />
 </head>
-<body>
-  <div class="shell">
-    <div class="topbar">
-      <div class="brand">QRZIP Lab<small>พื้นที่สำหรับ compression engine และงานวิจัยเชิงลึก</small></div>
-      <div class="nav">
-        <a href="./index.html">หน้าบ้าน</a>
-        <a href="./signup.html">สมัครสมาชิก</a>
-        <a href="./member.html">สมาชิก</a>
-        <a href="./admin.html">แอดมิน</a>
-        <a href="./lab.html">แลบวิจัย</a>
+<body data-page="lab">
+  <style>
+    /* Admin/Member/Lab Shared Styles */
+    body[data-page="lab"] {
+      background: #020617;
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .admin-layout {
+      display: flex;
+      height: 100vh;
+      width: 100%;
+    }
+
+    /* Sidebar Design */
+    .admin-sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: rgba(17, 24, 39, 0.6);
+      backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      padding: 28px 20px;
+      z-index: 10;
+    }
+
+    .admin-brand {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .admin-brand svg {
+      color: var(--brand);
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.4));
+    }
+
+    .admin-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .admin-nav a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: 1px solid transparent;
+    }
+
+    .admin-nav a:hover {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+    }
+
+    .admin-nav a.active {
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.1) 0%, transparent 100%);
+      border-left: 3px solid var(--brand);
+      color: #fff;
+      border-radius: 4px 12px 12px 4px;
+    }
+
+    /* Content Area Design */
+    .admin-content-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px;
+      background: radial-gradient(circle at top right, rgba(30, 58, 138, 0.15), transparent 40%),
+                  radial-gradient(circle at bottom left, rgba(15, 23, 42, 0.5), transparent 40%);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-header {
+      margin-bottom: 32px;
+    }
+
+    .admin-header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      background: linear-gradient(to right, #fff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .admin-header p {
+      color: var(--muted);
+      margin: 0;
+      font-size: 15px;
+    }
+
+    /* Modern Cards */
+    .glass-card {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 10px 40px -10px rgba(0,0,0,0.3);
+      margin-bottom: 24px;
+    }
+
+    .glass-card h3 {
+      margin-top: 0;
+      color: #e2e8f0;
+      font-size: 18px;
+    }
+    .glass-card p {
+      color: var(--muted);
+      margin-bottom: 0;
+      line-height: 1.5;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .iframe-shell {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      min-height: 700px;
+    }
+    .iframe-shell iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+  </style>
+
+  <div class="admin-layout">
+    
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+      <div class="admin-brand">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        QRZIP Admin
+      </div>
+      <div class="admin-nav">
+        <a href="./admin.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          แดชบอร์ด
+        </a>
+        <a href="./signup.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          จัดการสมาชิก
+        </a>
+        <a href="./member.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          แลบวิจัย (Member)
+        </a>
+        <a href="./lab.html" class="active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+          แลบวิจัย (Free)
+        </a>
+        <a href="./index.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          ไปหน้าบ้าน
+        </a>
       </div>
     </div>
 
-    <section class="hero">
-      <h1>แลบวิจัย</h1>
-      <p>หน้านี้เอาไว้ทดลอง compression engine, payload format, algorithm comparison, scanability และ multi-QR/chunk โดยแยกออกจากหน้าผู้ใช้ทั่วไปให้ชัดเจน</p>
-    </section>
+    <!-- Main Content -->
+    <div class="admin-content-wrapper">
+      <div class="admin-content">
+        
+        <div class="admin-header">
+          <h1>แลบวิจัย (Research Lab)</h1>
+          <p>หน้านี้เอาไว้ทดลอง compression engine, payload format, algorithm comparison, scanability และ multi-QR/chunk โดยแยกออกจากหน้าผู้ใช้ทั่วไปให้ชัดเจน</p>
+        </div>
 
-    <section class="card" style="margin-bottom:18px">
-      <div class="module-grid">
-        <div class="module-card">
-          <h3>โหมด Free</h3>
-          <p>เน้น self-contained payload, บีบอัดแบบ lossless, compare algorithm และวัดขนาดจริงก่อนสร้าง QR</p>
+        <div class="glass-card">
+          <div class="module-grid">
+            <div>
+              <h3>โหมด Free</h3>
+              <p>เน้น self-contained payload, บีบอัดแบบ lossless, compare algorithm และวัดขนาดจริงก่อนสร้าง QR</p>
+            </div>
+            <div>
+              <h3>โหมด Member</h3>
+              <p>เน้น ref สั้นมาก โดยให้หลังบ้านเก็บข้อความแล้วคืน id กลับมาเป็น `QZR|...` สำหรับโหมดสมาชิก</p>
+            </div>
+            <div>
+              <h3>ผลที่คาดหวัง</h3>
+              <p>ช่วยตัดสินว่าเคสไหนควรใช้ raw, fixed profile, Deflate, LZ compact หรือย้ายไป member/ref mode</p>
+            </div>
+          </div>
         </div>
-        <div class="module-card">
-          <h3>โหมด Member</h3>
-          <p>เน้น ref สั้นมาก โดยให้หลังบ้านเก็บข้อความแล้วคืน id กลับมาเป็น `QZR|...` สำหรับโหมดสมาชิก</p>
-        </div>
-        <div class="module-card">
-          <h3>ผลที่คาดหวัง</h3>
-          <p>ช่วยตัดสินว่าเคสไหนควรใช้ raw, fixed profile, Deflate, LZ compact หรือย้ายไป member/ref mode</p>
-        </div>
+
+        <section class="iframe-shell">
+          <iframe src="./text_compression_demo.html" title="QRZIP Research Lab"></iframe>
+        </section>
+
       </div>
-    </section>
-
-    <section class="iframe-shell">
-      <iframe src="./text_compression_demo.html" title="QRZIP Research Lab"></iframe>
-    </section>
+    </div>
   </div>
 </body>
 </html>

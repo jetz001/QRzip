@@ -46,7 +46,7 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
 
     def do_POST(self):
@@ -56,8 +56,24 @@ class Handler(SimpleHTTPRequestHandler):
             return self.handle_store()
         if parsed.path == "/api/member/signup":
             return self.handle_member_signup()
+        if parsed.path == "/api/admin/login":
+            return self.handle_admin_login()
+        if parsed.path.startswith("/api/admin/members/") and parsed.path.endswith("/ban"):
+            return self.handle_admin_member_ban(parsed.path)
 
         return super().do_POST()
+
+    def do_PUT(self):
+        parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/admin/members/"):
+            return self.handle_admin_member_edit(parsed.path)
+        return self._send_json({"error": "not_found"}, status=404)
+
+    def do_DELETE(self):
+        parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/admin/members/"):
+            return self.handle_admin_member_delete(parsed.path)
+        return self._send_json({"error": "not_found"}, status=404)
 
     def handle_store(self):
         try:
@@ -107,8 +123,74 @@ class Handler(SimpleHTTPRequestHandler):
         except Exception as exc:  # noqa: BLE001
             return self._send_json({"error": "server_error", "detail": str(exc)}, status=500)
 
+    def handle_admin_member_ban(self, path):
+        auth = self.headers.get("Authorization")
+        if not auth or auth != "Bearer admin-secret-token":
+            return self._send_json({"error": "unauthorized"}, status=401)
+        
+        parts = path.split("/")
+        if len(parts) < 6:
+            return self._send_json({"error": "invalid_path"}, status=400)
+        
+        member_id = parts[4]
+        with STORE_LOCK:
+            if member_id not in MEMBERS:
+                return self._send_json({"error": "not_found"}, status=404)
+            
+            body = self._read_json()
+            is_banned = bool(body.get("banned", False))
+            MEMBERS[member_id]["banned"] = is_banned
+            return self._send_json({"ok": True, "member": MEMBERS[member_id]})
+
+    def handle_admin_member_edit(self, path):
+        auth = self.headers.get("Authorization")
+        if not auth or auth != "Bearer admin-secret-token":
+            return self._send_json({"error": "unauthorized"}, status=401)
+            
+        member_id = path.split("/")[-1]
+        with STORE_LOCK:
+            if member_id not in MEMBERS:
+                return self._send_json({"error": "not_found"}, status=404)
+            
+            body = self._read_json()
+            if "name" in body:
+                MEMBERS[member_id]["name"] = body["name"].strip()
+            if "email" in body:
+                MEMBERS[member_id]["email"] = body["email"].strip()
+            if "plan" in body:
+                MEMBERS[member_id]["plan"] = body["plan"].strip()
+                
+            return self._send_json({"ok": True, "member": MEMBERS[member_id]})
+
+    def handle_admin_member_delete(self, path):
+        auth = self.headers.get("Authorization")
+        if not auth or auth != "Bearer admin-secret-token":
+            return self._send_json({"error": "unauthorized"}, status=401)
+            
+        member_id = path.split("/")[-1]
+        with STORE_LOCK:
+            if member_id not in MEMBERS:
+                return self._send_json({"error": "not_found"}, status=404)
+            
+            del MEMBERS[member_id]
+            return self._send_json({"ok": True})
+
+    def handle_admin_login(self):
+        try:
+            body = self._read_json()
+            if body.get("username") == "admin" and body.get("password") == "admin1234":
+                return self._send_json({"token": "admin-secret-token"})
+            return self._send_json({"error": "invalid_credentials"}, status=401)
+        except Exception as exc:
+            return self._send_json({"error": "server_error", "detail": str(exc)}, status=500)
+
     def do_GET(self):
         parsed = urlparse(self.path)
+        
+        if parsed.path.startswith("/api/admin/") or parsed.path == "/api/member/list":
+            auth = self.headers.get("Authorization")
+            if not auth or auth != "Bearer admin-secret-token":
+                return self._send_json({"error": "unauthorized"}, status=401)
 
         if parsed.path.startswith("/api/get/"):
             rid = parsed.path.split("/api/get/", 1)[1].strip()
@@ -168,6 +250,12 @@ class Handler(SimpleHTTPRequestHandler):
             return self._send_json({"ok": True, "count": len(STORE), "members": len(MEMBERS)})
 
         return super().do_GET()
+
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+        super().end_headers()
 
 
 def main():

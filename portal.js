@@ -91,6 +91,18 @@ function buildFreePayload(text) {
   return `QZ1|B|${toBase64Url(text)}`;
 }
 
+
+
+function buildWeightedFrequencyMap(entries) {
+  const map = new Map();
+  entries.forEach(([chars, weight]) => {
+    for (const char of chars) {
+      map.set(char, (map.get(char) || 0) + weight);
+    }
+  });
+  return map;
+}
+
 const presetProfiles = {
   num: [
     ["0123456789", 90],
@@ -122,356 +134,6 @@ const presetProfiles = {
     ["\n\t", 4]
   ]
 };
-
-// Dict profiles must match Lab preset (implicit, no per-QR metadata)
-const DICT_PROFILES = [
-  {
-    id: 1,
-    name: "log",
-    entries: [
-      "ERROR",
-      "USER_LOGIN_OK",
-      "กรุงเทพ",
-      " | ",
-      " |",
-      "| ",
-      "HTTP",
-      "GET ",
-      "POST ",
-      "SELECT ",
-      "INSERT ",
-      "UPDATE ",
-      "DELETE ",
-      "\"",
-      ": ",
-      ", ",
-      "\n"
-    ]
-  },
-  {
-    id: 2,
-    name: "thai_ui",
-    entries: [
-      "ข้อความนี้",
-      "ผลลัพธ์",
-      "บีบอัด",
-      "สแกนง่าย",
-      "สแกนยาก",
-      "ความหนาแน่น",
-      "เกณฑ์ตัดสิน",
-      "เลือก",
-      "ชนะ",
-      "เดิม",
-      "หลัง",
-      "ประมาณ",
-      "คะแนน",
-      "แน่น",
-      "QR version",
-      "scanability",
-      "payload",
-      "bytes",
-      "token",
-      "Member QR",
-      "Auto Selector",
-      " | ",
-      ": ",
-      ", ",
-      "\n"
-    ]
-  },
-  {
-    id: 3,
-    name: "thai_common",
-    entries: [
-      "การ",
-      "ความ",
-      "ที่",
-      "และ",
-      "ของ",
-      "เป็น",
-      "ใน",
-      "ไม่",
-      "ได้",
-      "ให้",
-      "เพื่อ",
-      "จาก",
-      "กับ",
-      "จะ",
-      "มี",
-      "หรือ",
-      "ซึ่ง",
-      "โดย",
-      "แล้ว",
-      "ว่า",
-      "กัน",
-      "ทำ",
-      "ต้อง",
-      "ควร",
-      "สามารถ",
-      "มาก",
-      "น้อย",
-      "ที่สุด",
-      "อย่าง",
-      "เมื่อ",
-      "ถ้า",
-      "แต่",
-      "เพราะ",
-      "ดังนั้น",
-      "รวมถึง",
-      "สำหรับ",
-      "ระหว่าง",
-      "ภายใน",
-      "ภายนอก",
-      "ระบบ",
-      "ข้อมูล",
-      "ข้อความ",
-      "สแกน",
-      "บีบอัด",
-      "ขนาด",
-      "ประมาณ",
-      " ",
-      "  ",
-      ". ",
-      ", ",
-      ": ",
-      " | ",
-      "\n"
-    ]
-  },
-  {
-    id: 4,
-    name: "eng_common",
-    entries: [
-      " the ",
-      " and ",
-      " to ",
-      " of ",
-      " in ",
-      " for ",
-      " with ",
-      " is ",
-      " are ",
-      " was ",
-      " were ",
-      " this ",
-      " that ",
-      " you ",
-      " we ",
-      " I ",
-      " not ",
-      " can ",
-      " should ",
-      " payload ",
-      " bytes ",
-      " token ",
-      " scanability ",
-      " version ",
-      " error",
-      " ERROR",
-      " OK",
-      " HTTP",
-      " GET ",
-      " POST ",
-      " PUT ",
-      " DELETE ",
-      " https://",
-      " http://",
-      "Content-Type: ",
-      "application/json",
-      "Authorization: Bearer ",
-      "\"id\":",
-      "\"name\":",
-      "\"status\":",
-      "\"message\":",
-      ", ",
-      ": ",
-      "\n"
-    ]
-  },
-  {
-    id: 5,
-    name: "eng_prose",
-    entries: [
-      " the ",
-      " and ",
-      "ing ",
-      "ion ",
-      "tion",
-      "ment",
-      "ness",
-      "ly ",
-      "ed ",
-      "er ",
-      "al ",
-      "re ",
-      "This ",
-      "This demo ",
-      "compression ",
-      "compressed ",
-      "decompressed ",
-      "lossless ",
-      "payload ",
-      "result ",
-      "results ",
-      "before ",
-      "after ",
-      "selecting ",
-      "methods ",
-      "multiple ",
-      "plain text ",
-      "text ",
-      "bytes ",
-      "version ",
-      "scanability ",
-      "should ",
-      "could ",
-      "would ",
-      "because ",
-      "therefore ",
-      "between ",
-      "within ",
-      "without ",
-      "more ",
-      "less ",
-      " than ",
-      " from ",
-      " with ",
-      ". ",
-      ", ",
-      ": ",
-      "\n"
-    ]
-  },
-  {
-    id: 6,
-    name: "json_http",
-    entries: [
-      "{\"",
-      "\"}",
-      "\":[",
-      "\"]",
-      "\":\"",
-      "\",\"",
-      "\", \"",
-      "\"id\":",
-      "\"name\":",
-      "\"type\":",
-      "\"status\":",
-      "\"message\":",
-      "\"data\":",
-      "\"payload\":",
-      "\"result\":",
-      "\"error\":",
-      "\"items\":",
-      "\"createdAt\":",
-      "\"updatedAt\":",
-      "\"userId\":",
-      "\"token\":",
-      "\"accessToken\":",
-      "\"refreshToken\":",
-      "application/json",
-      "Content-Type: ",
-      "Authorization: Bearer ",
-      "Accept: ",
-      "User-Agent: ",
-      "https://",
-      "http://",
-      "/api/",
-      "GET ",
-      "POST ",
-      "PUT ",
-      "PATCH ",
-      "DELETE ",
-      "HTTP/1.1",
-      "HTTP/2",
-      "\r\n",
-      "\n",
-      ", ",
-      ": "
-    ]
-  }
-];
-
-const DICT_PROFILE_BYTES = new Map(
-  DICT_PROFILES.map((p) => [p.id, p.entries.map((s) => encoder.encode(s))])
-);
-
-function getDictBytes(profileId) {
-  return DICT_PROFILE_BYTES.get(profileId) || null;
-}
-
-function dictDecodeBytes(profileId, tokenBytes) {
-  const dictBytes = getDictBytes(profileId);
-  if (!dictBytes) throw new Error("unknown_dict_profile");
-  const out = [];
-  for (let i = 0; i < tokenBytes.length; i++) {
-    const b = tokenBytes[i];
-    if (b !== 0x00) {
-      out.push(b);
-      continue;
-    }
-    if (i + 1 >= tokenBytes.length) break;
-    const code = tokenBytes[++i];
-    if (code === 0x00) {
-      out.push(0x00);
-      continue;
-    }
-    const dict = dictBytes[code - 1];
-    if (dict) {
-      for (const db of dict) out.push(db);
-    }
-  }
-  return Uint8Array.from(out);
-}
-
-// InlineDict (BPE) decoder helpers (ต้องตรงกับ Lab)
-function parseInlineDictBlob(blobBytes) {
-  if (!blobBytes || blobBytes.length < 3) throw new Error("invalid_inline_dict");
-  const v = blobBytes[0];
-  if (v !== 1 && v !== 2) throw new Error("unknown_inline_dict_version");
-  const n = blobBytes[1];
-  let pos = 2;
-  const entriesBytes = [];
-  for (let i = 0; i < n; i++) {
-    if (pos >= blobBytes.length) throw new Error("invalid_inline_dict");
-    const len = blobBytes[pos++];
-    if (pos + len > blobBytes.length) throw new Error("invalid_inline_dict");
-    entriesBytes.push(blobBytes.slice(pos, pos + len));
-    pos += len;
-  }
-  const deflateBytes = blobBytes.slice(pos);
-  return { version: v, entriesBytes, deflateBytes };
-}
-
-function inlineDictDecodeBytes(dictBytes, tokenBytes) {
-  const out = [];
-  for (let i = 0; i < tokenBytes.length; i++) {
-    const b = tokenBytes[i];
-    if (b !== 0x00) {
-      out.push(b);
-      continue;
-    }
-    if (i + 1 >= tokenBytes.length) break;
-    const code = tokenBytes[++i];
-    if (code === 0x00) {
-      out.push(0x00);
-      continue;
-    }
-    const d = dictBytes[code - 1];
-    if (d) for (const db of d) out.push(db);
-  }
-  return Uint8Array.from(out);
-}
-
-function buildWeightedFrequencyMap(entries) {
-  const map = new Map();
-  entries.forEach(([chars, weight]) => {
-    for (const char of chars) {
-      map.set(char, (map.get(char) || 0) + weight);
-    }
-  });
-  return map;
-}
 
 const presetFrequencyMaps = Object.fromEntries(
   Object.entries(presetProfiles).map(([key, entries]) => [key, buildWeightedFrequencyMap(entries)])
@@ -645,6 +307,7 @@ function decodeLzCompactFromBytes(input) {
   }
   return decoder.decode(Uint8Array.from(output));
 }
+
 
 async function decodeQrzipPayload(payload) {
   if (!payload) throw new Error("empty_payload");
@@ -852,30 +515,64 @@ async function extractQrFromImage(file) {
   return { payload: result.data, preview: imageDataUrl };
 }
 
-function renderQr(container, payload, size = 220) {
+function renderQr(container, payload, size = 220, isBinary = false) {
   container.innerHTML = "";
-  if (typeof QRCode === "undefined") {
+  if (typeof qrcode === "undefined") {
     container.textContent = "ยังโหลด QR library ไม่สำเร็จ";
     return false;
   }
   try {
-    new QRCode(container, {
-      text: payload,
-      width: size,
-      height: size,
-      colorDark: "#000000",
-      colorLight: "#ffffff",
-      correctLevel: QRCode.CorrectLevel.M
-    });
+    // 0 = auto version, "M" = medium error correction
+    const qr = qrcode(0, "M");
+    // qrcode-generator only takes lower 8 bits by default. 
+    // We MUST convert JS string to a UTF-8 byte string first for languages like Thai.
+    const utf8Payload = isBinary ? payload : unescape(encodeURIComponent(payload));
+    qr.addData(utf8Payload);
+    qr.make();
+    
+    const count = qr.getModuleCount();
+    const margin = 4;
+    const canvasModules = count + margin * 2;
+    
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasModules;
+    canvas.height = canvasModules;
+    // Scale canvas to the desired size using CSS
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+    canvas.style.imageRendering = "pixelated";
+    canvas.style.display = "block";
+    canvas.style.margin = "0 auto";
+    
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvasModules, canvasModules);
+    ctx.fillStyle = "#000000";
+    
+    for (let row = 0; row < count; row++) {
+      for (let col = 0; col < count; col++) {
+        if (qr.isDark(row, col)) {
+          ctx.fillRect(col + margin, row + margin, 1, 1);
+        }
+      }
+    }
+    
+    container.appendChild(canvas);
     return true;
-  } catch {
-    container.textContent = "QR ใหญ่เกินไป";
+  } catch (err) {
+    console.error("QR Generation error:", err);
+    container.textContent = "ขนาดยาวเกินขีดจำกัดของ QR (เกิน V40)";
     return false;
   }
 }
 
 async function apiGet(url) {
-  const response = await fetch(url);
+  const headers = {};
+  const token = localStorage.getItem("adminToken");
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const response = await fetch(url, { headers });
   const data = await response.json();
   if (!response.ok) {
     throw new Error(data?.error || "api_error");
@@ -884,9 +581,13 @@ async function apiGet(url) {
 }
 
 async function apiPost(url, body) {
+  const headers = { "Content-Type": "application/json" };
+  const token = localStorage.getItem("adminToken");
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body)
   });
   const data = await response.json();
@@ -937,13 +638,15 @@ async function initHomePage() {
       $("#scanPreview").style.display = "block";
       const decoded = await decodeQrzipPayload(payload);
       setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
-      setText("#scanPayload", payload);
-      setText("#scanRecovered", decoded.text);
+      $("#scanPayloadInput").value = payload;
+      setText("#scanDecoded", decoded.text);
       setText("#scanFreeHint", payload.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
+      $("#result-scan")?.classList.remove("hidden");
     } catch (error) {
-      setText("#scanStatus", "สแกนไม่สำเร็จ");
-      setText("#scanPayload", "");
-      setText("#scanRecovered", "");
+      console.error(error);
+      setText("#scanStatus", "สแกนไม่สำเร็จ: " + error.message);
+      $("#scanPayloadInput").value = "";
+      setText("#scanDecoded", "");
       setText("#scanFreeHint", "");
     }
   }
@@ -954,14 +657,60 @@ async function initHomePage() {
       setText("#freeStatus", "กรุณาใส่ข้อความก่อน");
       return;
     }
-    const payload = buildFreePayload(text);
-    const ok = renderQr($("#freeQr"), payload);
-    if (ok) {
-      setText("#freeStatus", `สร้าง Free QR 1 ใบแล้ว | payload ${utf8Bytes(payload).toLocaleString()} bytes`);
-      setText("#freePayload", payload);
+    
+    // Generate Raw QR
+    const rawOk = renderQr($("#rawQr"), text);
+    if (rawOk) {
+      setText("#rawStatus", `ขนาดเดิม: ${utf8Bytes(text).toLocaleString()} bytes`);
     } else {
-      setText("#freeStatus", "ข้อความยาวเกินสำหรับ Free 1 QR | แนะนำให้ใช้โหมดสมาชิกเพื่อสร้าง QR สั้นสุด");
-      setText("#freePayload", payload);
+      setText("#rawStatus", "ข้อความยาวเกินไปสำหรับ QR แบบปกติ!");
+    }
+
+    // Generate Compressed QR
+    // Using engine from qrzip_engine.js
+    const stats = typeof analyzeText === 'function' ? analyzeText(text) : null;
+    let payload = null;
+    let displayPayload = null;
+    let finalBytes = 0;
+    let savedBytes = 0;
+    let modelName = "";
+
+    if (stats) {
+      // Find best method dynamically
+      const selectorInfo = selectAutoCandidates(stats, text);
+      const methods = selectorInfo.candidates;
+      const results = methods.map((method) => evaluateMethod(method, text)).filter(Boolean);
+      const rankedInfo = rankResults(results, "scan", 0.82);
+      
+      if (rankedInfo && rankedInfo.ranked.length > 0) {
+        const best = rankedInfo.ranked[0];
+        payload = best.finalQrText;
+        displayPayload = best.finalPayload; // For the text box
+        finalBytes = best.finalPayloadBytes; // True byte size of the QR payload
+        savedBytes = utf8Bytes(text) - finalBytes;
+        modelName = best.label;
+      }
+    }
+    
+    if (!payload) {
+        // Fallback if engine fails
+        payload = buildFreePayload(text);
+        displayPayload = payload;
+        finalBytes = utf8Bytes(payload);
+        savedBytes = utf8Bytes(text) - finalBytes;
+        modelName = "Base64 (Fallback)";
+    }
+
+    const ok = renderQr($("#freeQr"), payload, 220, true);
+    if (ok) {
+      const savedPercent = savedBytes > 0 ? Math.round((savedBytes / utf8Bytes(text)) * 100) : 0;
+      setText("#freeStatus", `บีบอัดเหลือ: ${finalBytes.toLocaleString()} bytes (ประหยัด ${savedPercent}%)`);
+      setText("#freePayload", displayPayload);
+      if ($("#modelName")) setText("#modelName", `โมเดล: ${modelName}`);
+    } else {
+      setText("#freeStatus", "ข้อความยาวเกินสำหรับ Free 1 QR | แนะนำให้ใช้โหมดสมาชิก");
+      setText("#freePayload", displayPayload);
+      if ($("#modelName")) setText("#modelName", `โมเดล: ${modelName}`);
     }
   });
 
@@ -990,6 +739,67 @@ async function initHomePage() {
     $("#scanQrFile")?.click();
   });
 
+  let cameraStream = null;
+  let cameraInterval = null;
+
+  $("#cameraScanBtn")?.addEventListener("click", async () => {
+    try {
+      const video = $("#cameraVideo");
+      const container = $("#cameraContainer");
+      if (!video || !container) return;
+      
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      video.srcObject = cameraStream;
+      video.play();
+      container.style.display = "block";
+      setText("#scanStatus", "กำลังมองหา QR Code จากกล้อง...");
+      $("#result-scan")?.classList.remove("hidden");
+      
+      cameraInterval = setInterval(async () => {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          const canvas = document.createElement("canvas");
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          if (typeof jsQR !== "undefined") {
+            const result = jsQR(imageData.data, imageData.width, imageData.height);
+            if (result && result.data) {
+              stopCamera();
+              $("#scanPreview").src = canvas.toDataURL("image/jpeg");
+              $("#scanPreview").style.display = "block";
+              try {
+                const decoded = await decodeQrzipPayload(result.data);
+                setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
+                setText("#scanPayload", result.data);
+                setText("#scanDecoded", decoded.text);
+                setText("#scanFreeHint", result.data.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
+              } catch(e) {
+                setText("#scanStatus", "สแกนไม่สำเร็จ: " + e.message);
+              }
+            }
+          }
+        }
+      }, 500);
+    } catch (err) {
+      alert("ไม่สามารถเข้าถึงกล้องได้: " + err.message);
+    }
+  });
+
+  $("#cameraStopBtn")?.addEventListener("click", () => {
+    stopCamera();
+  });
+
+  function stopCamera() {
+    if (cameraInterval) { clearInterval(cameraInterval); cameraInterval = null; }
+    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+    const container = $("#cameraContainer");
+    if (container) container.style.display = "none";
+    setText("#scanStatus", "");
+  }
+
   const dropzone = $("#scanDropzone");
   ["dragenter", "dragover"].forEach((eventName) => {
     dropzone?.addEventListener(eventName, (event) => {
@@ -1011,27 +821,211 @@ async function initHomePage() {
 }
 
 async function initSignupPage() {
-  const current = loadMember();
-  setText("#signupState", current ? `มีสมาชิกในเครื่องนี้แล้ว: ${current.name}` : "ยังไม่มีข้อมูลสมาชิกในเครื่องนี้");
+  const adminToken = localStorage.getItem("qrzip_admin_token");
+  if (adminToken) {
+    $("#loginOverlay").style.display = "none";
+    $("#adminDashboard").style.display = "flex";
+    loadAdminMembers(adminToken);
+  }
 
-  $("#signupBtn")?.addEventListener("click", async () => {
-    const name = $("#signupName").value.trim();
-    const email = $("#signupEmail").value.trim();
-    const plan = $("#signupPlan").value;
-    if (!name || !email) {
-      setText("#signupStatus", "กรุณากรอกชื่อและอีเมล");
-      return;
-    }
-    setText("#signupStatus", "กำลังสมัครสมาชิก...");
+  $("#adminLoginForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const user = $("#adminUser").value.trim();
+    const pass = $("#adminPass").value.trim();
+    setText("#loginStatus", "กำลังตรวจสอบ...");
+    
     try {
-      const data = await apiPost("/api/member/signup", { name, email, plan });
-      saveMember(data.member);
-      setText("#signupStatus", `สมัครสำเร็จ | member id: ${data.member.id}`);
-      setText("#signupResult", JSON.stringify(data.member, null, 2));
-    } catch {
-      setText("#signupStatus", "สมัครไม่สำเร็จ");
+      const res = await fetch("http://127.0.0.1:8000/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: user, password: pass })
+      });
+      const data = await res.json();
+      if (res.ok && data.token) {
+        localStorage.setItem("qrzip_admin_token", data.token);
+        $("#loginOverlay").style.display = "none";
+        $("#adminDashboard").style.display = "flex";
+        loadAdminMembers(data.token);
+      } else {
+        setText("#loginStatus", data.error || "รหัสผ่านไม่ถูกต้อง");
+      }
+    } catch (e) {
+      setText("#loginStatus", "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
     }
   });
+
+  $("#adminLogout")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    localStorage.removeItem("qrzip_admin_token");
+    location.reload();
+  });
+}
+
+let currentMembers = [];
+
+async function loadAdminMembers(token) {
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/admin/members", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (res.ok) {
+      currentMembers = data.items || [];
+      renderMembersTable();
+    } else if (res.status === 401) {
+      localStorage.removeItem("qrzip_admin_token");
+      location.reload();
+    }
+  } catch (e) {
+    console.error("Failed to load members", e);
+  }
+}
+
+function renderMembersTable() {
+  const tbody = $("#managementTable");
+  if (!tbody) return;
+  
+  if (currentMembers.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">ไม่มีข้อมูลสมาชิก</td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = currentMembers.map(m => {
+    const isBanned = m.banned;
+    return `
+      <tr>
+        <td><code>${m.id}</code></td>
+        <td>${m.name}</td>
+        <td>${m.email}</td>
+        <td>
+          <span class="tag ${m.plan === 'pro' ? 'admin' : ''}">${m.plan}</span>
+          ${isBanned ? '<span class="tag banned" style="margin-left:4px;">BANNED</span>' : ''}
+        </td>
+        <td style="color:var(--muted); font-size:13px;">${new Date(m.createdAt).toLocaleString('th-TH')}</td>
+        <td>
+          <button class="action-btn edit" onclick="openEditModal('${m.id}')">แก้ไข</button>
+          <button class="action-btn ban" onclick="toggleBan('${m.id}', ${!isBanned})">${isBanned ? 'ปลดแบน' : 'แบน'}</button>
+          <button class="action-btn delete" onclick="deleteMember('${m.id}')">ลบ</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function openEditModal(id) {
+  const m = currentMembers.find(x => x.id === id);
+  if (!m) return;
+  $("#editId").value = m.id;
+  $("#editName").value = m.name;
+  $("#editEmail").value = m.email;
+  $("#editPlan").value = m.plan;
+  $("#editModal").style.display = "flex";
+}
+
+window.closeEditModal = function() {
+  $("#editModal").style.display = "none";
+}
+
+window.openEditModal = openEditModal;
+
+window.saveEditMember = async function() {
+  const token = localStorage.getItem("qrzip_admin_token");
+  if (!token) return;
+  
+  const id = $("#editId").value;
+  const name = $("#editName").value;
+  const email = $("#editEmail").value;
+  const plan = $("#editPlan").value;
+  
+  try {
+    const res = await fetch(`http://127.0.0.1:8000/api/admin/members/${id}`, {
+      method: "PUT",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, plan })
+    });
+    if (res.ok) {
+      closeEditModal();
+      loadAdminMembers(token);
+    } else {
+      alert("แก้ไขไม่สำเร็จ");
+    }
+  } catch (e) {
+    alert("เชื่อมต่อไม่สำเร็จ");
+  }
+}
+
+window.toggleBan = async function(id, banState) {
+  if (!confirm(`คุณต้องการ ${banState ? 'แบน' : 'ปลดแบน'} สมาชิกนี้ใช่หรือไม่?`)) return;
+  
+  const token = localStorage.getItem("qrzip_admin_token");
+  if (!token) return;
+  
+  try {
+    const res = await fetch(`http://127.0.0.1:8000/api/admin/members/${id}/ban`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ banned: banState })
+    });
+    if (res.ok) loadAdminMembers(token);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+window.deleteMember = async function(id) {
+  if (!confirm("คุณต้องการลบสมาชิกนี้ถาวรใช่หรือไม่? (ไม่สามารถกู้คืนได้)")) return;
+  
+  const token = localStorage.getItem("qrzip_admin_token");
+  if (!token) return;
+  
+  try {
+    const res = await fetch(`http://127.0.0.1:8000/api/admin/members/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.ok) loadAdminMembers(token);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+window.openAddModal = function() {
+  $("#addName").value = "";
+  $("#addEmail").value = "";
+  $("#addPlan").value = "member";
+  $("#addModal").style.display = "flex";
+}
+
+window.closeAddModal = function() {
+  $("#addModal").style.display = "none";
+}
+
+window.saveAddMember = async function() {
+  const name = $("#addName").value.trim();
+  const email = $("#addEmail").value.trim();
+  const plan = $("#addPlan").value;
+  
+  if (!name || !email) {
+    alert("กรุณากรอกชื่อและอีเมล");
+    return;
+  }
+  
+  const token = localStorage.getItem("qrzip_admin_token");
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/member/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, plan })
+    });
+    if (res.ok) {
+      closeAddModal();
+      if (token) loadAdminMembers(token);
+    } else {
+      alert("เพิ่มสมาชิกไม่สำเร็จ");
+    }
+  } catch (e) {
+    alert("เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ");
+  }
 }
 
 async function initMemberPage() {
@@ -1092,6 +1086,41 @@ function renderRows(tableSelector, rows, mapper) {
 }
 
 async function initAdminPage() {
+  const token = localStorage.getItem("adminToken");
+  
+  if (!token) {
+    $("#loginOverlay").style.display = "flex";
+    $("#adminDashboard").style.display = "none";
+  } else {
+    $("#loginOverlay").style.display = "none";
+    $("#adminDashboard").style.display = "flex";
+    loadAdminData();
+  }
+
+  $("#adminLoginForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = $("#adminUser").value;
+    const password = $("#adminPass").value;
+    setText("#loginStatus", "กำลังตรวจสอบ...");
+    try {
+      const res = await apiPost("/api/admin/login", { username, password });
+      localStorage.setItem("adminToken", res.token);
+      $("#loginOverlay").style.display = "none";
+      $("#adminDashboard").style.display = "flex";
+      loadAdminData();
+    } catch {
+      setText("#loginStatus", "รหัสผ่านไม่ถูกต้อง");
+    }
+  });
+
+  $("#adminLogout")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    localStorage.removeItem("adminToken");
+    window.location.reload();
+  });
+}
+
+async function loadAdminData() {
   try {
     const [overview, refs, members] = await Promise.all([
       apiGet("/api/admin/overview"),
@@ -1124,7 +1153,9 @@ async function initAdminPage() {
       </tr>
     `);
   } catch {
-    setText("#adminStatus", "โหลดข้อมูลแอดมินไม่สำเร็จ");
+    setText("#adminStatus", "โหลดข้อมูลแอดมินไม่สำเร็จ (Token อาจหมดอายุ)");
+    localStorage.removeItem("adminToken");
+    setTimeout(() => window.location.reload(), 1500);
   }
 }
 

@@ -7,90 +7,460 @@
   <link rel="stylesheet" href="./portal.css" />
 </head>
 <body data-page="admin">
-  <div class="shell">
-    <div class="topbar">
-      <div class="brand">QRZIP Admin<small>ดูภาพรวมระบบ และเข้าถึงเครื่องมือเชิงลึก</small></div>
-      <div class="nav">
-        <a href="./index.html">หน้าบ้าน</a>
-        <a href="./signup.html">สมัครสมาชิก</a>
-        <a href="./member.html">สมาชิก</a>
-        <a href="./admin.html">แอดมิน</a>
-        <a href="./lab.html">แลบวิจัย</a>
+  <style>
+    /* Admin Specific Styles */
+    body[data-page="admin"] {
+      background: #020617; /* Solid dark background */
+      margin: 0;
+      height: 100vh;
+      overflow: hidden; /* Prevent body scroll, scroll content instead */
+    }
+
+    .admin-layout {
+      display: flex;
+      height: 100vh;
+      width: 100%;
+    }
+
+    /* Sidebar Design */
+    .admin-sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: rgba(17, 24, 39, 0.6);
+      backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      padding: 28px 20px;
+      z-index: 10;
+    }
+
+    .admin-brand {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .admin-brand svg {
+      color: var(--brand);
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.4));
+    }
+
+    .admin-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .admin-nav a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: 1px solid transparent;
+    }
+
+    .admin-nav a:hover {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+    }
+
+    .admin-nav a.active {
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.1) 0%, transparent 100%);
+      border-left: 3px solid var(--brand);
+      color: #fff;
+      border-radius: 4px 12px 12px 4px;
+    }
+
+    .admin-nav a.danger {
+      color: var(--bad);
+      margin-top: auto;
+    }
+
+    .admin-nav a.danger:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* Content Area Design */
+    .admin-content-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px;
+      background: radial-gradient(circle at top right, rgba(30, 58, 138, 0.15), transparent 40%),
+                  radial-gradient(circle at bottom left, rgba(15, 23, 42, 0.5), transparent 40%);
+    }
+
+    .admin-content {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .admin-header {
+      margin-bottom: 32px;
+    }
+
+    .admin-header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      background: linear-gradient(to right, #fff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .admin-header p {
+      color: var(--muted);
+      margin: 0;
+      font-size: 15px;
+    }
+
+    /* Modern Cards */
+    .glass-card {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 10px 40px -10px rgba(0,0,0,0.3);
+      margin-bottom: 24px;
+    }
+
+    .glass-card h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 20px 0;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Metrics Grid */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .metric-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      padding: 20px;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .metric-item:hover {
+      transform: translateY(-2px);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .metric-item .label {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .metric-item .value {
+      font-size: 36px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+    }
+
+    /* Module Cards */
+    .module-grid-modern {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .module-card-modern {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .module-card-modern::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--brand), transparent);
+      opacity: 0.5;
+    }
+
+    .module-card-modern h3 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+      color: #f8fafc;
+    }
+
+    .module-card-modern p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 24px 0;
+      flex: 1;
+    }
+
+    .module-card-modern .btn {
+      align-self: flex-start;
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 8px;
+    }
+
+    /* Modern Tables */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    .modern-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .modern-table th {
+      text-align: left;
+      padding: 14px 16px;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .modern-table td {
+      padding: 16px;
+      vertical-align: middle;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .modern-table tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .modern-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .modern-table code {
+      background: rgba(0,0,0,0.3);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: monospace;
+      color: #93c5fd;
+      font-size: 13px;
+    }
+
+    /* Layout Grid for Tables */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Login Screen Override */
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+      z-index: 50;
+    }
+    
+    #loginOverlay .card {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border-radius: 24px;
+    }
+  </style>
+
+  <div id="loginOverlay" style="display:flex; justify-content:center; align-items:center;">
+    <div class="card" style="width:100%; max-width:400px; padding:40px;">
+      <div style="text-align:center; margin-bottom: 32px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        <h2 style="margin:0; font-size: 24px; font-weight:700;">Admin Login</h2>
+        <p style="color:var(--muted); margin:8px 0 0; font-size:14px;">กรุณาเข้าสู่ระบบเพื่อจัดการ QRZIP</p>
       </div>
-    </div>
-
-    <section class="hero">
-      <h1>หน้าแอดมิน</h1>
-      <p>หน้านี้ใช้ดูภาพรวมของระบบจริง และเป็นทางเข้าของเครื่องมือเชิงลึก เช่น compression lab, algorithm comparison และงานวิจัยเรื่อง multi-QR/chunk ที่ไม่ควรไปรบกวนหน้าผู้ใช้ทั่วไป</p>
-    </section>
-
-    <div id="adminStatus" class="status"></div>
-
-    <section class="card" style="margin-bottom:18px">
-      <h2>ภาพรวมระบบ</h2>
-      <div class="metrics">
-        <div class="metric"><div class="label">refs ทั้งหมด</div><div class="value" id="metricRefs">0</div></div>
-        <div class="metric"><div class="label">สมาชิกทั้งหมด</div><div class="value" id="metricMembers">0</div></div>
-        <div class="metric"><div class="label">free refs</div><div class="value" id="metricFree">0</div></div>
-        <div class="metric"><div class="label">member refs</div><div class="value" id="metricMemberRefs">0</div></div>
-      </div>
-    </section>
-
-    <section class="card" style="margin-bottom:18px">
-      <h2>โมดูล</h2>
-      <div class="module-grid">
-        <div class="module-card">
-          <h3>Front Office</h3>
-          <p>หน้าบ้านสำหรับผู้ใช้ทั่วไป โดยเล่าเรื่องแบบง่ายว่า `ฟรี = 1 QR` และ `สมาชิก = 1 QR สั้นสุด`</p>
-          <a class="btn primary" href="./index.html">เปิดหน้าบ้าน</a>
-        </div>
-        <div class="module-card">
-          <h3>Research Lab</h3>
-          <p>แลบสำหรับงานลึกของ compression engine เช่น Auto Selector, Deflate, LZ Compact, payload tuning และ multi-QR/chunk</p>
-          <a class="btn primary" href="./lab.html">เข้าแลบวิจัย</a>
-        </div>
-        <div class="module-card">
-          <h3>Member Module</h3>
-          <p>หน้าสมาชิกสำหรับสร้าง QR แบบ ref ที่สั้นที่สุด โดยให้ผู้สแกนเปิดอ่านข้อมูลได้ผ่านหลังบ้าน</p>
-          <a class="btn primary" href="./member.html">เปิดโมดูลสมาชิก</a>
-        </div>
-      </div>
-    </section>
-
-    <div class="grid">
-      <section class="card span-7">
-        <h2>รายการ ref ล่าสุด</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Mode</th>
-              <th>Member</th>
-              <th>ข้อความ</th>
-              <th>เวลา</th>
-            </tr>
-          </thead>
-          <tbody id="refsTable"></tbody>
-        </table>
-      </section>
-
-      <section class="card span-5">
-        <h2>รายการสมาชิก</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>ชื่อ</th>
-              <th>อีเมล</th>
-              <th>แผน</th>
-              <th>เวลา</th>
-            </tr>
-          </thead>
-          <tbody id="membersTable"></tbody>
-        </table>
-      </section>
+      <form id="adminLoginForm">
+        <input type="text" id="adminUser" placeholder="Username" style="width:100%; padding:14px 16px; margin-bottom:16px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; background: rgba(0,0,0,0.2); color:#fff;" required />
+        <input type="password" id="adminPass" placeholder="Password" style="width:100%; padding:14px 16px; margin-bottom:24px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; background: rgba(0,0,0,0.2); color:#fff;" required />
+        <button type="submit" class="btn primary" style="width:100%; padding:14px; font-weight:600; font-size:16px;">เข้าสู่ระบบ</button>
+      </form>
+      <div id="loginStatus" class="status" style="color:var(--bad); margin-top:16px; text-align:center; min-height: 20px;"></div>
     </div>
   </div>
+
+  <div class="admin-layout" id="adminDashboard" style="display:none;">
+    
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+      <div class="admin-brand">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        QRZIP Admin
+      </div>
+      <div class="admin-nav">
+        <a href="./admin.html" class="active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          แดชบอร์ด
+        </a>
+        <a href="./signup.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          จัดการสมาชิก
+        </a>
+        <a href="./member.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          แลบวิจัย (Member)
+        </a>
+        <a href="./lab.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+          แลบวิจัย (Free)
+        </a>
+        <a href="./index.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          ไปหน้าบ้าน
+        </a>
+        <a href="#" id="adminLogout" class="danger">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          ออกจากระบบ
+        </a>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="admin-content-wrapper">
+      <div class="admin-content">
+        
+        <div class="admin-header">
+          <h1>ภาพรวมระบบ</h1>
+          <p>ดูสถิติการใช้งาน และเข้าถึงเครื่องมือจัดการขั้นสูงของ QRZIP</p>
+        </div>
+
+        <div id="adminStatus" class="status" style="margin-bottom: 20px;"></div>
+
+        <div class="glass-card">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            สถิติโดยรวม
+          </h2>
+          <div class="metric-grid">
+            <div class="metric-item">
+              <div class="label">Refs ทั้งหมด</div>
+              <div class="value" id="metricRefs">0</div>
+            </div>
+            <div class="metric-item">
+              <div class="label">สมาชิกทั้งหมด</div>
+              <div class="value" id="metricMembers">0</div>
+            </div>
+            <div class="metric-item">
+              <div class="label">Free Refs</div>
+              <div class="value" id="metricFree">0</div>
+            </div>
+            <div class="metric-item">
+              <div class="label">Member Refs</div>
+              <div class="value" id="metricMemberRefs">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            ทางลัดโมดูล
+          </h2>
+          <div class="module-grid-modern">
+            <div class="module-card-modern">
+              <h3>Front Office (หน้าบ้าน)</h3>
+              <p>หน้าใช้งานสำหรับบุคคลทั่วไป ใช้สร้าง QR แบบฟรี (1 QR) หรือสแกนเพื่ออ่านข้อมูล</p>
+              <a class="btn primary" href="./index.html">เปิดหน้าบ้าน</a>
+            </div>
+            <div class="module-card-modern">
+              <h3>Research Lab</h3>
+              <p>ห้องปฏิบัติการจำลอง อัลกอริทึมบีบอัด Deflate, LZ Compact และการวิเคราะห์ขนาด Payload</p>
+              <a class="btn primary" href="./lab.html">เข้าแลบวิจัย</a>
+            </div>
+            <div class="module-card-modern">
+              <h3>Member Module</h3>
+              <p>ระบบสร้าง QR สำหรับสมาชิก โดยข้อมูลจะถูกจัดเก็บในฐานข้อมูล เพื่อให้ได้ QR ที่เล็กที่สุด</p>
+              <a class="btn primary" href="./member.html">เปิดโมดูลสมาชิก</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="glass-card">
+            <h2>รายการ Ref ล่าสุด</h2>
+            <div class="table-container">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Mode</th>
+                    <th>Member</th>
+                    <th>ข้อความ</th>
+                    <th>เวลา</th>
+                  </tr>
+                </thead>
+                <tbody id="refsTable"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <h2>รายการสมาชิกล่าสุด</h2>
+            <div class="table-container">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>ชื่อ</th>
+                    <th>อีเมล</th>
+                    <th>แพ็กเกจ</th>
+                    <th>เวลา</th>
+                  </tr>
+                </thead>
+                <tbody id="membersTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- End Admin Content -->
+    </div> <!-- End Admin Wrapper -->
+
+  </div> <!-- End Layout -->
+  
   <script src="./portal.js"></script>
 </body>
 </html>
