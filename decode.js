@@ -265,6 +265,8 @@ export function compressedPMatching(compressedBytes, pattern) {
 
 export async function decodeQrzipPayload(payload, apiGet = null) {
   if (!payload) throw new Error("empty_payload");
+  // Only trim newlines, DO NOT use .trim() because Base45 uses Space (' ') as a valid character!
+  payload = payload.replace(/[\r\n]+$/, "");
   if (payload.startsWith("QZR|")) {
     const rid = payload.slice(4);
     if (!apiGet) throw new Error("apiGet required for reference payloads");
