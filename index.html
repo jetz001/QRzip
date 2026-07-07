@@ -380,6 +380,7 @@
           <div id="scanStatus" class="status"></div>
           <div id="scanFreeHint" class="status"></div>
           <img id="scanPreview" class="scan-preview" alt="Uploaded QR" />
+          <div id="qr-reader" style="display: none; width: 300px; max-width: 100%;"></div>
           
           <div style="width:100%; display:grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
             <div>
@@ -424,7 +425,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   
   <script>
     function switchTab(tabId, event) {
