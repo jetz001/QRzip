@@ -824,23 +824,34 @@ async function openMemberProfile() {
     const items = data.items || [];
     
     if (items.length === 0) {
-      $("#profileHistoryTable").innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted);">ไม่มีประวัติการสร้าง QR Code</td></tr>`;
+      $("#profileHistoryTable").innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">ไม่มีประวัติการสร้าง QR Code</td></tr>`;
       return;
     }
+    
+    // Make showHistoryQr global so it can be called from inline onclick
+    window.showHistoryQr = function(payload) {
+      const container = document.getElementById("qrPreviewContainer");
+      if (!container) return;
+      document.getElementById("qrPreviewModal").style.display = "flex";
+      renderQr(container, payload, 220, false);
+    };
     
     renderRows("#profileHistoryTable", items, (item) => `
       <tr>
         <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2);">${item.created_at || item.createdAt || "-"}</td>
         <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2);"><span style="background:var(--primary); color:#fff; padding:2px 8px; border-radius:12px; font-size:12px;">${item.mode || "member"}</span></td>
-        <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2); max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2); max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
           <div><strong>Text:</strong> ${(item.text || "").slice(0, 50)}</div>
           <div style="font-size:12px; color:var(--text-muted); font-family:monospace; margin-top:4px;">${item.payload}</div>
+        </td>
+        <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2);">
+          <button class="btn primary" style="padding:6px 12px; font-size:12px;" onclick="showHistoryQr('${item.payload}')">QR</button>
         </td>
       </tr>
     `);
   } catch (err) {
     console.error("Error fetching history:", err);
-    $("#profileHistoryTable").innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:#ef4444;">โหลดข้อมูลไม่สำเร็จ</td></tr>`;
+    $("#profileHistoryTable").innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">โหลดข้อมูลไม่สำเร็จ</td></tr>`;
   }
 }
 

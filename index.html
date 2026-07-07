@@ -473,13 +473,23 @@
               <th style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.1);">Date</th>
               <th style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.1);">Mode</th>
               <th style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.1);">Text / Payload</th>
+              <th style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.1);">Action</th>
             </tr>
           </thead>
           <tbody id="profileHistoryTable">
-            <tr><td colspan="3" style="text-align:center; padding:20px; color:#94a3b8;">Loading...</td></tr>
+            <tr><td colspan="4" style="text-align:center; padding:20px; color:#94a3b8;">Loading...</td></tr>
           </tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- QR Preview Modal -->
+  <div id="qrPreviewModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(6px); z-index:110; align-items:center; justify-content:center;">
+    <div class="modal" style="background:#fff; border-radius:16px; padding:32px; box-shadow:0 10px 40px -10px rgba(0,0,0,0.5); text-align:center; position:relative;">
+      <button onclick="document.getElementById('qrPreviewModal').style.display='none'" style="position:absolute; top:12px; right:12px; background:none; border:none; cursor:pointer; font-size:24px; color:#64748b;">&times;</button>
+      <h3 style="margin:0 0 16px 0; color:#0f172a;">Member QR</h3>
+      <div id="qrPreviewContainer" style="margin: 0 auto; min-width:220px; min-height:220px; display:flex; justify-content:center; align-items:center;"></div>
     </div>
   </div>
 
