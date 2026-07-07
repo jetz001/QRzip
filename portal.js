@@ -178,7 +178,13 @@ function parseRef(value) {
 
 function setText(selector, value) {
   const node = $(selector);
-  if (node) node.textContent = value;
+  if (node) {
+    if (node.tagName === 'TEXTAREA' || node.tagName === 'INPUT') {
+      node.value = value;
+    } else {
+      node.textContent = value;
+    }
+  }
 }
 
 async function initHomePage() {
@@ -294,6 +300,18 @@ async function initHomePage() {
 
   $("#scanPickBtn")?.addEventListener("click", () => {
     $("#scanQrFile")?.click();
+  });
+
+  $("#copyDecodedBtn")?.addEventListener("click", () => {
+    const text = $("#scanDecoded")?.value;
+    if (text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = $("#copyDecodedBtn");
+        const originalText = btn.textContent;
+        btn.textContent = "✅ Copied!";
+        setTimeout(() => btn.textContent = originalText, 2000);
+      }).catch(err => console.error("Copy failed", err));
+    }
   });
 
   let cameraStream = null;

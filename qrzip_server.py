@@ -259,7 +259,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 def main():
-    host = os.environ.get("QRZIP_HOST", "127.0.0.1")
+    host = os.environ.get("QRZIP_HOST", "0.0.0.0")
     port = int(os.environ.get("QRZIP_PORT", "8000"))
     httpd = ThreadingHTTPServer((host, port), Handler)
     print(f"Serving on http://{host}:{port}/  (press Ctrl+C to stop)")
