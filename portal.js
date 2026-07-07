@@ -190,6 +190,23 @@ function setText(selector, value) {
 async function initHomePage() {
   const member = loadMember();
   setText("#memberState", memberBadgeText(member));
+  
+  const regBtnNav = $("#memberRegisterBtnNav");
+  const regBtnBar = $("#memberRegisterBtnBar");
+  
+  if (member) {
+    if (regBtnNav) regBtnNav.style.display = 'none';
+    if (regBtnBar) regBtnBar.style.display = 'none';
+  } else {
+    if (regBtnNav) {
+      regBtnNav.style.display = 'inline-block';
+      regBtnNav.addEventListener('click', () => { document.getElementById('userRegisterModal').style.display = 'flex'; });
+    }
+    if (regBtnBar) {
+      regBtnBar.style.display = 'inline-block';
+      regBtnBar.addEventListener('click', () => { document.getElementById('userRegisterModal').style.display = 'flex'; });
+    }
+  }
 
   async function handleQrFile(file) {
     if (!file) return;
