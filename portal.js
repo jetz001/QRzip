@@ -619,16 +619,27 @@ async function initMemberPage() {
   const member = loadMember();
   if (!member) {
     setText("#memberModeStatus", "ยังไม่มีสมาชิกในเครื่องนี้ กรุณาสมัครก่อน");
-    return;
+  } else {
+    // If #memberCard exists, set it
+    if ($("#memberCard")) {
+      setText("#memberCard", `${member.name} | ${member.email} | ${member.id}`);
+    }
   }
-  setText("#memberCard", `${member.name} | ${member.email} | ${member.id}`);
 
   $("#memberCreateBtn")?.addEventListener("click", async () => {
     const text = $("#memberText").value;
+    const currentMember = loadMember();
+    
+    if (!currentMember) {
+      alert("กรุณาสมัครสมาชิกก่อนใช้งานโหมดนี้");
+      return;
+    }
+    
     if (!text.trim()) {
       setText("#memberModeStatus", "กรุณาใส่ข้อความก่อน");
       return;
     }
+
     setText("#memberModeStatus", "กำลังสร้าง QR สมาชิก...");
     try {
       const data = await apiPost("/api/store", {
