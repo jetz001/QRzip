@@ -192,16 +192,17 @@ async function initHomePage() {
       const { payload, preview } = await extractQrFromImage(file);
       $("#scanPreview").src = preview;
       $("#scanPreview").style.display = "block";
+      $("#scanPayloadInput").value = payload;
+      console.log("[QR Scanner] Decoded raw payload:", payload);
+      
       const decoded = await decodeQrzipPayload(payload);
       setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
-      $("#scanPayloadInput").value = payload;
       setText("#scanDecoded", decoded.text);
       setText("#scanFreeHint", payload.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
       $("#result-scan")?.classList.remove("hidden");
     } catch (error) {
       console.error(error);
       setText("#scanStatus", "สแกนไม่สำเร็จ: " + error.message);
-      $("#scanPayloadInput").value = "";
       setText("#scanDecoded", "");
       setText("#scanFreeHint", "");
     }
