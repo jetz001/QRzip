@@ -218,7 +218,7 @@ async function initHomePage() {
       $("#scanPayloadInput").value = payload;
       console.log("[QR Scanner] Decoded raw payload:", payload);
       
-      const decoded = await decodeQrzipPayload(payload);
+      const decoded = await decodeQrzipPayload(payload, apiGet);
       setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
       setText("#scanDecoded", decoded.text);
       setText("#scanFreeHint", payload.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
@@ -399,7 +399,7 @@ async function initHomePage() {
       const onScanSuccess = async (decodedText) => {
         stopCamera();
         try {
-          const decoded = await decodeQrzipPayload(decodedText);
+          const decoded = await decodeQrzipPayload(decodedText, apiGet);
           setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
           setText("#scanPayloadInput", decodedText);
           setText("#scanDecoded", decoded.text);
