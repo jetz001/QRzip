@@ -615,16 +615,51 @@ window.saveAddMember = async function() {
   }
 }
 
+window.submitUserRegistration = async function() {
+  const name = $("#userRegName").value.trim();
+  const email = $("#userRegEmail").value.trim();
+  if (!name || !email) {
+    alert("กรุณากรอกชื่อและอีเมล");
+    return;
+  }
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/member/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, plan: "member" })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      saveMember(data.member);
+      document.getElementById('userRegisterModal').style.display = 'none';
+      alert("สมัครสมาชิกสำเร็จ เครื่องนี้ถูกผูกเรียบร้อยแล้ว!");
+      window.location.reload();
+    } else {
+      alert("สมัครสมาชิกไม่สำเร็จ");
+    }
+  } catch (e) {
+    alert("เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ");
+  }
+}
+
 async function initMemberPage() {
   const member = loadMember();
   if (!member) {
     setText("#memberModeStatus", "ยังไม่มีสมาชิกในเครื่องนี้ กรุณาสมัครก่อน");
+    if ($("#memberRegisterBtn")) $("#memberRegisterBtn").style.display = "inline-flex";
+    if ($("#memberProfileBtn2")) $("#memberProfileBtn2").style.display = "none";
   } else {
+    if ($("#memberRegisterBtn")) $("#memberRegisterBtn").style.display = "none";
+    if ($("#memberProfileBtn2")) $("#memberProfileBtn2").style.display = "inline-flex";
     // If #memberCard exists, set it
     if ($("#memberCard")) {
       setText("#memberCard", `${member.name} | ${member.email} | ${member.id}`);
     }
   }
+
+  $("#memberRegisterBtn")?.addEventListener("click", () => {
+    document.getElementById('userRegisterModal').style.display = 'flex';
+  });
 
   $("#memberCreateBtn")?.addEventListener("click", async () => {
     const text = $("#memberText").value;
