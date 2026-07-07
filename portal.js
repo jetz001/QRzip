@@ -330,28 +330,41 @@ async function initHomePage() {
       
       const config = { fps: 10, qrbox: { width: 250, height: 250 } };
       
-      await html5QrCodeScannerInstance.start(
-        { facingMode: "environment" },
-        config,
-        async (decodedText) => {
-          stopCamera();
-          try {
-            const decoded = await decodeQrzipPayload(decodedText);
-            setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
-            setText("#scanPayloadInput", decodedText);
-            setText("#scanDecoded", decoded.text);
-            setText("#scanFreeHint", decodedText.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
-          } catch(e) {
-            setText("#scanStatus", "สแกนไม่สำเร็จ: " + e.message);
-            setText("#scanPayloadInput", decodedText);
-          }
-        },
-        (errorMessage) => {
-          // ignore error
+      const onScanSuccess = async (decodedText) => {
+        stopCamera();
+        try {
+          const decoded = await decodeQrzipPayload(decodedText);
+          setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
+          setText("#scanPayloadInput", decodedText);
+          setText("#scanDecoded", decoded.text);
+          setText("#scanFreeHint", decodedText.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
+        } catch(e) {
+          setText("#scanStatus", "สแกนไม่สำเร็จ: " + e.message);
+          setText("#scanPayloadInput", decodedText);
         }
-      );
+      };
+      
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length > 0) {
+          let cameraId = devices[0].id;
+          for (const d of devices) {
+            if (d.label.toLowerCase().includes("back") || d.label.toLowerCase().includes("environment")) {
+              cameraId = d.id;
+              break;
+            }
+          }
+          await html5QrCodeScannerInstance.start(cameraId, config, onScanSuccess, () => {});
+        } else {
+          await html5QrCodeScannerInstance.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+        }
+      } catch (startErr) {
+        // Fallback to environment if getCameras failed (e.g. some browsers don't support getCameras without permissions first)
+        await html5QrCodeScannerInstance.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+      }
     } catch (err) {
-      alert("ไม่สามารถเข้าถึงกล้องได้: " + err.message);
+      const msg = err.message || err || "Unknown error";
+      alert("ไม่สามารถเข้าถึงกล้องได้: " + msg + "\n(หากเปิดผ่าน LINE/Facebook ให้ลองเปิดด้วย Safari/Chrome แทนครับ)");
       $("#cameraContainer").style.display = "none";
     }
   });
