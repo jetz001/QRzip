@@ -359,8 +359,8 @@
         <div style="display:flex; gap:12px; margin-bottom:16px;">
           <button id="cameraScanBtn" class="btn-outline" style="flex:1; padding:12px; font-weight:600; font-size:16px; cursor:pointer; background:var(--surface); border:1px solid var(--border); border-radius:8px; transition:all 0.2s;">📷 Scan with Camera</button>
         </div>
-        <div id="cameraContainer" style="display:none; text-align:center; margin-bottom:16px;">
-          <video id="cameraVideo" playsinline style="width:100%; max-width:400px; border-radius:12px; border:2px solid var(--border); background:#000;"></video>
+        <div id="cameraContainer" style="display:none; text-align:center; margin-bottom:16px; width: 100%; max-width: 400px; margin-left: auto; margin-right: auto;">
+          <div id="camera-reader" style="width:100%; border-radius:12px; overflow:hidden; border:2px solid var(--border);"></div>
           <div style="margin-top:8px;">
             <button id="cameraStopBtn" style="padding:8px 16px; font-size:14px; cursor:pointer; background:transparent; border:1px solid #ef4444; color:#ef4444; border-radius:8px;">Stop Camera</button>
           </div>

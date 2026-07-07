@@ -314,52 +314,45 @@ async function initHomePage() {
     }
   });
 
-  let cameraStream = null;
-  let cameraInterval = null;
+  let html5QrCodeScannerInstance = null;
 
   $("#cameraScanBtn")?.addEventListener("click", async () => {
     try {
-      const video = $("#cameraVideo");
       const container = $("#cameraContainer");
-      if (!video || !container) return;
-      
-      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      video.srcObject = cameraStream;
-      video.play();
+      if (!container) return;
       container.style.display = "block";
       setText("#scanStatus", "กำลังมองหา QR Code จากกล้อง...");
       $("#result-scan")?.classList.remove("hidden");
       
-      cameraInterval = setInterval(async () => {
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-          const canvas = document.createElement("canvas");
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          
-          if (typeof jsQR !== "undefined") {
-            const result = jsQR(imageData.data, imageData.width, imageData.height);
-            if (result && result.data) {
-              stopCamera();
-              $("#scanPreview").src = canvas.toDataURL("image/jpeg");
-              $("#scanPreview").style.display = "block";
-              try {
-                const decoded = await decodeQrzipPayload(result.data);
-                setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
-                setText("#scanPayload", result.data);
-                setText("#scanDecoded", decoded.text);
-                setText("#scanFreeHint", result.data.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
-              } catch(e) {
-                setText("#scanStatus", "สแกนไม่สำเร็จ: " + e.message);
-              }
-            }
+      if (!html5QrCodeScannerInstance) {
+        html5QrCodeScannerInstance = new Html5Qrcode("camera-reader");
+      }
+      
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      
+      await html5QrCodeScannerInstance.start(
+        { facingMode: "environment" },
+        config,
+        async (decodedText) => {
+          stopCamera();
+          try {
+            const decoded = await decodeQrzipPayload(decodedText);
+            setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
+            setText("#scanPayloadInput", decodedText);
+            setText("#scanDecoded", decoded.text);
+            setText("#scanFreeHint", decodedText.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
+          } catch(e) {
+            setText("#scanStatus", "สแกนไม่สำเร็จ: " + e.message);
+            setText("#scanPayloadInput", decodedText);
           }
+        },
+        (errorMessage) => {
+          // ignore error
         }
-      }, 500);
+      );
     } catch (err) {
       alert("ไม่สามารถเข้าถึงกล้องได้: " + err.message);
+      $("#cameraContainer").style.display = "none";
     }
   });
 
@@ -368,11 +361,16 @@ async function initHomePage() {
   });
 
   function stopCamera() {
-    if (cameraInterval) { clearInterval(cameraInterval); cameraInterval = null; }
-    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
-    const container = $("#cameraContainer");
-    if (container) container.style.display = "none";
-    setText("#scanStatus", "");
+    if (html5QrCodeScannerInstance && html5QrCodeScannerInstance.isScanning) {
+      html5QrCodeScannerInstance.stop().then(() => {
+        $("#cameraContainer").style.display = "none";
+        setText("#scanStatus", "");
+      }).catch(err => console.error(err));
+    } else {
+      const container = $("#cameraContainer");
+      if (container) container.style.display = "none";
+      setText("#scanStatus", "");
+    }
   }
 
   const dropzone = $("#scanDropzone");
