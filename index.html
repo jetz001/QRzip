@@ -276,6 +276,20 @@
       display: none;
     }
 
+    .mode-label {
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .mode-label:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .mode-label.active {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.5);
+    }
+
     /* Member State Bar */
     .member-bar {
       margin-top: 40px;
@@ -311,7 +325,6 @@
     </a>
     <div class="nav-links">
       <button id="memberRegisterBtnNav" class="btn-outline" style="cursor:pointer; color:var(--primary); border-color:var(--primary); margin-right:8px;">สมัครใช้งาน</button>
-      <a href="./member.html" id="memberWorkspaceBtn" class="btn-outline" style="display:none; margin-right:8px; border-color:var(--primary); color:var(--primary);">Member Workspace</a>
       <button id="memberProfileBtn" class="btn-outline" style="display:none; cursor:pointer; background:var(--primary); color:#fff; border:none; margin-right:8px;">โปรไฟล์</button>
       <a href="./admin.html" class="btn-outline">Admin</a>
     </div>
@@ -333,8 +346,26 @@
 
       <!-- Tab 1: Create QR -->
       <div id="tab-create" class="tab-content active">
+        
+        <div style="display:flex; gap:16px; margin-bottom:16px; background:var(--surface); padding:8px; border-radius:12px; border:1px solid var(--border);">
+          <label style="flex:1; cursor:pointer; padding:12px; border-radius:8px; display:flex; align-items:center; gap:8px; transition:all 0.2s;" id="labelModeOffline" class="mode-label active">
+            <input type="radio" name="createMode" value="offline" checked style="accent-color:var(--primary); width:18px; height:18px;" onchange="toggleCreateMode(this.value)">
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-weight:600; font-size:15px; color:var(--text-main);">Offline QR (Free)</span>
+              <span style="font-size:12px; color:var(--text-muted);">บีบอัดข้อความให้อยู่ใน QR โดยตรง ไม่ใช้เน็ต</span>
+            </div>
+          </label>
+          <label style="flex:1; cursor:pointer; padding:12px; border-radius:8px; display:flex; align-items:center; gap:8px; transition:all 0.2s;" id="labelModeMember" class="mode-label">
+            <input type="radio" name="createMode" value="member" style="accent-color:var(--brand); width:18px; height:18px;" onchange="toggleCreateMode(this.value)">
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-weight:600; font-size:15px; color:var(--text-main);">Short QR (Member)</span>
+              <span style="font-size:12px; color:var(--text-muted);">เก็บข้อความในคลาวด์ ได้ QR 1 ใบ สแกนง่ายสุด</span>
+            </div>
+          </label>
+        </div>
+
         <textarea id="homeText" placeholder="Paste your text here (logs, paragraphs, data)..."></textarea>
-        <button id="freeCreateBtn" class="btn-massive">Generate Compressed QR</button>
+        <button id="mainCreateBtn" class="btn-massive">Generate Compressed QR</button>
         
         <div id="result-create" class="result-area hidden" style="align-items: stretch;">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%;">

@@ -197,9 +197,7 @@ async function initHomePage() {
   if (member) {
     if (regBtnNav) regBtnNav.style.display = 'none';
     if (regBtnBar) regBtnBar.style.display = 'none';
-    if ($("#memberWorkspaceBtn")) $("#memberWorkspaceBtn").style.display = 'inline-flex';
   } else {
-    if ($("#memberWorkspaceBtn")) $("#memberWorkspaceBtn").style.display = 'none';
     if (regBtnNav) {
       regBtnNav.style.display = 'inline-block';
       regBtnNav.addEventListener('click', () => { document.getElementById('userRegisterModal').style.display = 'flex'; });
@@ -233,14 +231,67 @@ async function initHomePage() {
     }
   }
 
-  $("#freeCreateBtn")?.addEventListener("click", () => {
+  window.toggleCreateMode = function(mode) {
+    if (mode === 'offline') {
+      $("#labelModeOffline").classList.add('active');
+      $("#labelModeMember").classList.remove('active');
+    } else {
+      const currentMember = loadMember();
+      if (!currentMember) {
+        // Revert to offline if not logged in
+        document.querySelector('input[name="createMode"][value="offline"]').checked = true;
+        alert("กรุณาสมัครสมาชิกก่อนใช้งานโหมดนี้");
+        return;
+      }
+      $("#labelModeOffline").classList.remove('active');
+      $("#labelModeMember").classList.add('active');
+    }
+    $("#result-create")?.classList.add("hidden");
+  };
+
+  $("#mainCreateBtn")?.addEventListener("click", async () => {
     const text = $("#homeText").value;
     if (!text.trim()) {
       setText("#freeStatus", "กรุณาใส่ข้อความก่อน");
       return;
     }
+
+    const mode = document.querySelector('input[name="createMode"]:checked').value;
+
+    if (mode === 'member') {
+      const currentMember = loadMember();
+      if (!currentMember) {
+        alert("กรุณาสมัครสมาชิกก่อนใช้งานโหมดนี้");
+        return;
+      }
+      setText("#freeStatus", "กำลังสร้าง QR สมาชิก...");
+      $("#result-create")?.classList.remove("hidden");
+      try {
+        const data = await apiPost("/api/store", {
+          text,
+          payload: "",
+          memberId: currentMember.id,
+          mode: "member"
+        });
+        const ref = `QZR|${data.id}`;
+        const ok = renderQr($("#freeQr"), ref);
+        setText("#freeStatus", ok
+          ? `สร้าง Member QR แล้ว | payload ${utf8Bytes(ref).toLocaleString()} bytes`
+          : "สร้าง ref ได้แล้ว แต่ QR แสดงผลไม่สำเร็จ");
+        setText("#modelName", "Cloud Storage (Ref ID)");
+        setText("#freePayload", ref);
+        
+        // Render Raw QR just for comparison
+        const rawOk = renderQr($("#rawQr"), text);
+        setText("#rawStatus", rawOk ? `ขนาดเดิม: ${utf8Bytes(text).toLocaleString()} bytes` : "ข้อความยาวเกินไปสำหรับ QR แบบปกติ!");
+      } catch (err) {
+        console.error(err);
+        setText("#freeStatus", "สร้าง QR สมาชิกไม่สำเร็จ");
+      }
+      return;
+    }
     
-    // Generate Raw QR
+    // Offline mode logic (Original)
     const rawOk = renderQr($("#rawQr"), text);
     if (rawOk) {
       setText("#rawStatus", `ขนาดเดิม: ${utf8Bytes(text).toLocaleString()} bytes`);
@@ -248,8 +299,6 @@ async function initHomePage() {
       setText("#rawStatus", "ข้อความยาวเกินไปสำหรับ QR แบบปกติ!");
     }
 
-    // Generate Compressed QR
-    // Using engine from qrzip_engine.js
     const stats = typeof analyzeText === 'function' ? analyzeText(text) : null;
     let payload = null;
     let displayPayload = null;
@@ -258,7 +307,6 @@ async function initHomePage() {
     let modelName = "";
 
     if (stats) {
-      // Find best method dynamically
       const selectorInfo = selectAutoCandidates(stats, text);
       const methods = selectorInfo.candidates;
       const results = methods.map((method) => evaluateMethod(method, text)).filter(Boolean);
@@ -267,15 +315,14 @@ async function initHomePage() {
       if (rankedInfo && rankedInfo.ranked.length > 0) {
         const best = rankedInfo.ranked[0];
         payload = best.finalQrText;
-        displayPayload = best.finalPayload; // For the text box
-        finalBytes = best.finalPayloadBytes; // True byte size of the QR payload
+        displayPayload = best.finalPayload;
+        finalBytes = best.finalPayloadBytes;
         savedBytes = utf8Bytes(text) - finalBytes;
         modelName = best.label;
       }
     }
     
     if (!payload) {
-        // Fallback if engine fails
         payload = buildFreePayload(text);
         displayPayload = payload;
         finalBytes = utf8Bytes(payload);
