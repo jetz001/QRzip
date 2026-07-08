@@ -388,11 +388,12 @@ const DICT_PROFILES = [
     }
 
     function bytesToBase64(bytes) {
-      let binary = "";
-      bytes.forEach((byte) => {
-        binary += String.fromCharCode(byte);
-      });
-      return btoa(binary);
+      const chunks = [];
+      const chunkSize = 8192;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        chunks.push(String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize)));
+      }
+      return btoa(chunks.join(""));
     }
 
     function bytesToBinaryString(bytes) {
@@ -649,7 +650,8 @@ const DICT_PROFILES = [
       const tokens = [];
       let current = "";
       let nextIndex = 1;
-      for (const char of text) {
+      const chars = [...text];
+      for (const char of chars) {
         const combined = current + char;
         if (dictionary.has(combined)) {
           current = combined;
@@ -661,9 +663,10 @@ const DICT_PROFILES = [
         }
       }
       if (current) {
-        const prefix = current.slice(0, -1);
-        const lastChar = current.slice(-1);
-        tokens.push([prefix ? dictionary.get(prefix) : 0, lastChar]);
+        const currChars = [...current];
+        const lastChar = currChars.pop();
+        const prefix = currChars.join("");
+        tokens.push([prefix ? dictionary.get(prefix) : 0, lastChar || ""]);
       }
       return { method: "lz78", tokens };
     }
@@ -862,7 +865,10 @@ const DICT_PROFILES = [
 
       // Sort by codepoint for deterministic decode
       const table = [...freq.entries()].sort((a, b) => a[0] - b[0]);
-      const total = text.length;
+      const total = [...freq.values()].reduce((a, b) => a + b, 0);
+      if (total > 500000) {
+        throw new Error("text_too_long_for_arithmetic");
+      }
 
       // Build cumulative ranges [0,1) using BigInt arithmetic for precision
       // Scale: use denominator = total (integer arithmetic with BigInt)
@@ -1087,7 +1093,8 @@ const DICT_PROFILES = [
         label: "LZ Compact"
       },
       lz78: { compress: lz78Compress, decompress: lz78Decompress, label: "LZ78" },
-      arithmetic: { compress: arithmeticCompress, decompress: arithmeticDecompress, label: "Arithmetic Coding" }
+      arithmetic: { compress: arithmeticCompress, decompress: arithmeticDecompress, label: "Arithmetic Coding" },
+      tunstall: { compress: tunstallCompress, decompress: tunstallDecompress, label: "Tunstall" }
     };
 
     function selectAutoCandidates(stats, text) {
@@ -1150,6 +1157,8 @@ const DICT_PROFILES = [
 
       if (stats.entropy <= 4.7 && stats.uniqueChars <= 90) {
         candidates.add("huffman");
+        // Tunstall ทำงานได้ดีกับข้อความ ASCII (repetitive symbol distribution)
+        if (stats.asciiRatio > 0.7) candidates.add("tunstall");
         reasons.push("entropy ต่ำและจำนวนตัวอักษรไม่ซ้ำไม่สูงมาก จึงลอง Huffman แบบ dynamic");
       }
 
@@ -1229,17 +1238,19 @@ const DICT_PROFILES = [
         const originalBytes = utf8Bytes(text);
         const serializedBytes = utf8Bytes(serialized);
         const originalTokens = estimateTokens(text);
-        const serializedTokens = estimateTokens(serialized);
-        const savedBytes = originalBytes - serializedBytes;
-        const savedTokens = originalTokens - serializedTokens;
-        const ratio = originalBytes > 0 ? (serializedBytes / originalBytes) * 100 : 100;
-        const tokenRatio = originalTokens > 0 ? (serializedTokens / originalTokens) * 100 : 100;
+        
         const carrier = method === "raw"
           ? buildQrCarrierForRaw(text, encodingMode)
           : buildQrCarrierForCompressed({ method, payload, serialized }, encodingMode);
         const finalPayload = carrier.displayText;
         const finalQrText = carrier.qrText;
         const finalPayloadBytes = carrier.bytesLen;
+
+        const serializedTokens = estimateTokens(finalPayload);
+        const savedBytes = originalBytes - finalPayloadBytes;
+        const savedTokens = originalTokens - serializedTokens;
+        const ratio = originalBytes > 0 ? (finalPayloadBytes / originalBytes) * 100 : 100;
+        const tokenRatio = originalTokens > 0 ? (serializedTokens / originalTokens) * 100 : 100;
         const scanability = buildScanability(finalPayloadBytes, encodingMode, finalQrText);
         const ok = decoded === text;
         return {
@@ -1578,6 +1589,11 @@ const DICT_PROFILES = [
         return { qrText: bytesToBinaryString(frame), bytesLen: frame.length, displayText };
       }
 
+      if (result?.method === "tunstall" && result?.payload?.data) {
+        const frame = buildTunstallBinaryFrame(result.payload);
+        return { qrText: bytesToBinaryString(frame), bytesLen: frame.length, displayText };
+      }
+
       // วิธีอื่น ๆ ยังใช้ text mode ไปก่อน (เพราะเป็น legacy/JSON)
       return { qrText: displayText, bytesLen: utf8Bytes(displayText), displayText };
     }
@@ -1639,6 +1655,9 @@ const DICT_PROFILES = [
       if (result?.method === "arithmetic" && result?.payload?.data) {
         return buildArithmeticTextPayload(result.payload);
       }
+      if (result?.method === "tunstall" && result?.payload?.data) {
+        return buildTunstallTextPayload(result.payload);
+      }
       // For other algorithms in this demo, keep a compact legacy form.
       return `QZ1|J|${toBase64Url(result.serialized || "")}`;
     }
@@ -1658,13 +1677,14 @@ const DICT_PROFILES = [
 
     function rleCompress(text) {
       const runs = [];
-      for (let i = 0; i < text.length; i++) {
+      const chars = [...text];
+      for (let i = 0; i < chars.length; i++) {
         let count = 1;
-        while (i + 1 < text.length && text[i] === text[i + 1]) {
+        while (i + 1 < chars.length && chars[i] === chars[i + 1]) {
           count++;
           i++;
         }
-        runs.push([count, text[i]]);
+        runs.push([count, chars[i]]);
       }
       return { method: "rle", runs };
     }
@@ -1716,6 +1736,163 @@ const DICT_PROFILES = [
         binary += String.fromCharCode(byte);
       });
       return { base64: btoa(binary), bitLength: bits.length };
+    }
+
+    // ─── Tunstall Coding (Variable-to-Fixed length) ───
+    // สร้าง codebook ด้วย greedy algorithm: ขยาย leaf ที่มีความน่าจะเป็นสูงสุดซ้ำไปเรื่อยๆ
+    function buildTunstallCodebook(freqMap, numCodes) {
+      const total = [...freqMap.values()].reduce((a, b) => a + b, 0);
+      if (total === 0 || freqMap.size === 0) return { codebook: [], codeBits: 0 };
+
+      let leaves = [];
+      for (const [ch, cnt] of freqMap.entries()) {
+        leaves.push({ str: ch, prob: cnt / total });
+      }
+
+      while (leaves.length < numCodes) {
+        // หา leaf ที่มีความน่าจะเป็นสูงสุด
+        let best = -1, bestProb = -1;
+        for (let i = 0; i < leaves.length; i++) {
+          if (leaves[i].prob > bestProb) { bestProb = leaves[i].prob; best = i; }
+        }
+        if (best < 0) break;
+        const parent = leaves.splice(best, 1)[0];
+        // ถ้าขยายแล้วจะเกิน numCodes ก็หยุด
+        if (leaves.length + freqMap.size > numCodes) {
+          leaves.push(parent);
+          break;
+        }
+        for (const [ch, cnt] of freqMap.entries()) {
+          leaves.push({ str: parent.str + ch, prob: parent.prob * (cnt / total) });
+        }
+      }
+
+      leaves = leaves.slice(0, numCodes);
+      return { codebook: leaves.map(l => l.str), codeBits: Math.ceil(Math.log2(numCodes)) };
+    }
+
+    function tunstallCompress(text) {
+      if (!text.length) return { method: "tunstall", data: "", codeCount: 0, codeBits: 0, symCount: 0, table: [] };
+
+      const freqMap = new Map();
+      for (const ch of text) freqMap.set(ch, (freqMap.get(ch) || 0) + 1);
+
+      const alphabetSize = freqMap.size;
+      if (alphabetSize === 1) {
+        const ch = [...freqMap.keys()][0];
+        const len = text.length;
+        const binary = String.fromCharCode(len & 0xff, (len >> 8) & 0xff);
+        return { method: "tunstall", data: btoa(binary), codeCount: 1, codeBits: 1, symCount: 1, table: [ch.repeat(len)] };
+      }
+
+      // เลือก numCodes เป็น power-of-2 ที่เหมาะสม (สูงสุด 256 เพื่อ 1 byte/codeword)
+      let numCodes = 1;
+      while (numCodes < Math.min(256, alphabetSize * 4)) numCodes <<= 1;
+      numCodes = Math.max(numCodes, alphabetSize);
+      if (numCodes > 256) numCodes = 256;
+
+      const { codebook, codeBits } = buildTunstallCodebook(freqMap, numCodes);
+
+      // Encode: greedy longest-match scan
+      const codes = [];
+      let i = 0;
+      while (i < text.length) {
+        let matched = -1, matchLen = 0;
+        for (let cIdx = 0; cIdx < codebook.length; cIdx++) {
+          const s = codebook[cIdx];
+          if (s.length > matchLen && text.startsWith(s, i)) {
+            matched = cIdx; matchLen = s.length;
+          }
+        }
+        if (matched >= 0) {
+          codes.push(matched);
+          i += matchLen;
+        } else {
+          // fallback: map single char by first-char match
+          let idx = codebook.findIndex(s => s.length === 1 && s === text[i]);
+          if (idx < 0) idx = 0;
+          codes.push(idx);
+          i++;
+        }
+      }
+
+      // Pack codes into bits (codeBits bits each)
+      let bits = "";
+      for (const code of codes) {
+        bits += code.toString(2).padStart(codeBits, "0");
+      }
+      while (bits.length % 8 !== 0) bits += "0";
+      const bytes = [];
+      for (let b = 0; b < bits.length; b += 8) bytes.push(parseInt(bits.slice(b, b + 8), 2));
+      let binary = "";
+      bytes.forEach(b => binary += String.fromCharCode(b));
+
+      return {
+        method: "tunstall",
+        data: btoa(binary),
+        codeCount: codebook.length,
+        codeBits,
+        symCount: codes.length,
+        bitCount: codes.length * codeBits,
+        table: codebook
+      };
+    }
+
+    function tunstallDecompress(payload) {
+      if (!payload.data || !payload.table || payload.codeBits == null) return "";
+      const codebook = payload.table;
+      const codeBits = payload.codeBits;
+      const symCount = payload.symCount || 0;
+      if (codeBits === 0) return "";
+      const binary = atob(payload.data);
+      let bits = "";
+      for (let i = 0; i < binary.length; i++) {
+        bits += binary.charCodeAt(i).toString(2).padStart(8, "0");
+      }
+      let out = "";
+      let decoded = 0;
+      for (let i = 0; i + codeBits <= bits.length && decoded < symCount; i += codeBits) {
+        const code = parseInt(bits.slice(i, i + codeBits), 2);
+        out += codebook[code] || "";
+        decoded++;
+      }
+      return out;
+    }
+
+    function buildTunstallTextPayload(payload) {
+      // format: QZ1|G|<codeBits>|<symCount>|<tableB64url>|<dataB64url>
+      const tableJson = JSON.stringify(payload.table);
+      const tableBytes = encoder.encode(tableJson);
+      const tableDeflate = typeof pako !== "undefined"
+        ? pako.deflateRaw(tableBytes, { level: 9 })
+        : tableBytes;
+      const tableB64 = bytesToBase64Url(tableDeflate);
+      const dataB64 = toBase64UrlFromBase64(payload.data || "");
+      return `QZ1|G|${payload.codeBits}|${payload.symCount}|${tableB64}|${dataB64}`;
+    }
+
+    function buildTunstallBinaryFrame(payload) {
+      // Header: QZ1G + uint8(codeBits) + uint24(symCount) + uint16(tableLen) + tableDeflate + dataBytes
+      const tableJson = JSON.stringify(payload.table);
+      const tableBytes = encoder.encode(tableJson);
+      const tableDeflate = typeof pako !== "undefined"
+        ? pako.deflateRaw(tableBytes, { level: 9 })
+        : tableBytes;
+      const dataBytes = base64ToBytes(payload.data || "");
+      const symCount = payload.symCount || 0;
+      const codeBits = payload.codeBits || 0;
+      const tableLen = tableDeflate.length;
+      const header = new Uint8Array([
+        0x51, 0x5a, 0x31, 0x47, // QZ1G
+        codeBits & 0xff,
+        (symCount >> 16) & 0xff, (symCount >> 8) & 0xff, symCount & 0xff,
+        (tableLen >> 8) & 0xff, tableLen & 0xff
+      ]);
+      const out = new Uint8Array(header.length + tableDeflate.length + dataBytes.length);
+      out.set(header, 0);
+      out.set(tableDeflate, header.length);
+      out.set(dataBytes, header.length + tableDeflate.length);
+      return out;
     }
 
     function base64ToBits(base64, bitLength) {

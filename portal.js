@@ -54,6 +54,7 @@ function buildFreePayload(text) {
 
 async function extractQrFromImage(file) {
   if (typeof Html5Qrcode === "undefined") throw new Error("html5_qrcode_not_loaded");
+  if (!file || !file.type.startsWith("image/")) throw new Error("invalid_image_file");
   const reader = new FileReader();
   const imageDataUrl = await new Promise((resolve, reject) => {
     reader.onload = () => resolve(reader.result);
@@ -64,6 +65,7 @@ async function extractQrFromImage(file) {
   try {
     const html5QrCode = new Html5Qrcode("qr-reader");
     const result = await html5QrCode.scanFile(file, true);
+    html5QrCode.clear();
     return { payload: result, preview: imageDataUrl };
   } catch (err) {
     console.error("html5-qrcode scan error:", err);
@@ -129,7 +131,12 @@ async function apiGet(url) {
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const response = await fetch(url, { headers });
-  const data = await response.json();
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (err) {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  }
   if (!response.ok) {
     throw new Error(data?.error || "api_error");
   }
@@ -146,7 +153,12 @@ async function apiPost(url, body) {
     headers,
     body: JSON.stringify(body)
   });
-  const data = await response.json();
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (err) {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  }
   if (!response.ok) {
     throw new Error(data?.error || "api_error");
   }
@@ -473,13 +485,12 @@ async function initHomePage() {
 }
 
 async function initSignupPage() {
-  // Bypass login screen
-  localStorage.setItem("qrzip_admin_token", "admin-secret-token");
-  const adminToken = "admin-secret-token";
-  
-  if ($("#loginOverlay")) $("#loginOverlay").style.display = "none";
-  if ($("#adminDashboard")) $("#adminDashboard").style.display = "flex";
-  loadAdminMembers(adminToken);
+  const adminToken = localStorage.getItem("qrzip_admin_token");
+  if (adminToken) {
+    if ($("#loginOverlay")) $("#loginOverlay").style.display = "none";
+    if ($("#adminDashboard")) $("#adminDashboard").style.display = "flex";
+    loadAdminMembers(adminToken);
+  }
 
   $("#adminLoginForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -488,7 +499,7 @@ async function initSignupPage() {
     setText("#loginStatus", "กำลังตรวจสอบ...");
     
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/admin/login", {
+      const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: user, password: pass })
@@ -518,7 +529,7 @@ let currentMembers = [];
 
 async function loadAdminMembers(token) {
   try {
-    const res = await fetch("http://127.0.0.1:8000/api/admin/members", {
+    const res = await fetch("/api/admin/members", {
       headers: { "Authorization": `Bearer ${token}` }
     });
     const data = await res.json();
@@ -591,7 +602,7 @@ window.saveEditMember = async function() {
   const plan = $("#editPlan").value;
   
   try {
-    const res = await fetch(`http://127.0.0.1:8000/api/admin/members/${id}`, {
+    const res = await fetch(`/api/admin/members/${id}`, {
       method: "PUT",
       headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, plan })
@@ -614,7 +625,7 @@ window.toggleBan = async function(id, banState) {
   if (!token) return;
   
   try {
-    const res = await fetch(`http://127.0.0.1:8000/api/admin/members/${id}/ban`, {
+    const res = await fetch(`/api/admin/members/${id}/ban`, {
       method: "POST",
       headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ banned: banState })
@@ -632,7 +643,7 @@ window.deleteMember = async function(id) {
   if (!token) return;
   
   try {
-    const res = await fetch(`http://127.0.0.1:8000/api/admin/members/${id}`, {
+    const res = await fetch(`/api/admin/members/${id}`, {
       method: "DELETE",
       headers: { "Authorization": `Bearer ${token}` }
     });
@@ -665,7 +676,7 @@ window.saveAddMember = async function() {
   
   const token = localStorage.getItem("qrzip_admin_token");
   try {
-    const res = await fetch("http://127.0.0.1:8000/api/member/signup", {
+    const res = await fetch("/api/member/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, plan })
@@ -689,7 +700,7 @@ window.submitUserRegistration = async function() {
     return;
   }
   try {
-    const res = await fetch("http://127.0.0.1:8000/api/member/signup", {
+    const res = await fetch("/api/member/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, plan: "member" })
@@ -785,13 +796,12 @@ function renderRows(tableSelector, rows, mapper) {
 }
 
 async function initAdminPage() {
-  // Bypass login screen
-  localStorage.setItem("adminToken", "admin-secret-token");
-  const token = "admin-secret-token";
-  
-  if ($("#loginOverlay")) $("#loginOverlay").style.display = "none";
-  if ($("#adminDashboard")) $("#adminDashboard").style.display = "flex";
-  loadAdminData();
+  const token = localStorage.getItem("adminToken");
+  if (token) {
+    if ($("#loginOverlay")) $("#loginOverlay").style.display = "none";
+    if ($("#adminDashboard")) $("#adminDashboard").style.display = "flex";
+    loadAdminData();
+  }
 
   $("#adminLoginForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();

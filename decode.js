@@ -28,6 +28,7 @@ export function base45ToBytes(text) {
       const c3 = valueOf.get(text[i + 2]);
       if (c1 === undefined || c2 === undefined || c3 === undefined) throw new Error("invalid_base45");
       const x = c1 + c2 * 45 + c3 * 2025;
+      if (x > 0xFFFF) throw new Error("invalid_base45");
       out.push((x >> 8) & 0xff, x & 0xff);
       i += 3;
     } else {
@@ -36,6 +37,7 @@ export function base45ToBytes(text) {
       const c2 = valueOf.get(text[i + 1]);
       if (c1 === undefined || c2 === undefined) throw new Error("invalid_base45");
       const x = c1 + c2 * 45;
+      if (x > 0xFFFF) throw new Error("invalid_base45");
       out.push(x & 0xff);
       i += 2;
     }
@@ -133,7 +135,9 @@ function bitsFromBytes(bytes, bitLength) {
 }
 
 export function decodeFixedPayload(profileId, bitLength, dataB64Url) {
-  const tree = buildHuffmanTree(presetFrequencyMaps[profileId.toLowerCase()]);
+  const map = presetFrequencyMaps[profileId.toLowerCase()];
+  if (!map) throw new Error("unknown_profile");
+  const tree = buildHuffmanTree(map);
   if (!tree) throw new Error("unknown_profile");
   const bits = bitsFromBytes(base64UrlToBytes(dataB64Url), Number(bitLength || 0));
   let out = "";
@@ -149,7 +153,9 @@ export function decodeFixedPayload(profileId, bitLength, dataB64Url) {
 }
 
 export function decodeFixedFromBytes(profileKey, bitLength, dataBytes) {
-  const tree = buildHuffmanTree(presetFrequencyMaps[profileKey?.toLowerCase()]);
+  const map = presetFrequencyMaps[profileKey?.toLowerCase()];
+  if (!map) throw new Error("unknown_profile");
+  const tree = buildHuffmanTree(map);
   if (!tree) throw new Error("unknown_profile");
   const bits = bitsFromBytes(dataBytes, Number(bitLength || 0));
   let out = "";
@@ -236,6 +242,7 @@ export function decodeLzCompactFromBytes(input) {
         const offset = (pair >> 4) + 1;
         const length = (pair & 0x0f) + 3;
         const start = output.length - offset;
+        if (start < 0) throw new Error("invalid_lz_distance");
         for (let i = 0; i < length; i++) {
           output.push(output[start + i]);
         }
@@ -263,6 +270,15 @@ export function compressedPMatching(compressedBytes, pattern) {
 }
 
 
+function safeInflate(bytes) {
+  if (typeof pako === "undefined") throw new Error("pako_not_loaded");
+  try {
+    return pako.inflateRaw(bytes);
+  } catch (err) {
+    throw new Error("deflate_error");
+  }
+}
+
 export async function decodeQrzipPayload(payload, apiGet = null) {
   if (!payload) throw new Error("empty_payload");
   // Only trim newlines, DO NOT use .trim() because Base45 uses Space (' ') as a valid character!
@@ -280,30 +296,27 @@ export async function decodeQrzipPayload(payload, apiGet = null) {
   const globalInlineDictDecodeBytes = window.inlineDictDecodeBytes;
 
   if (payload.startsWith("QZ1D:")) {
-    if (typeof pako === "undefined") throw new Error("pako_not_loaded");
     const bytes = base45ToBytes(payload.slice(5));
-    const restored = pako.inflateRaw(bytes);
+    const restored = safeInflate(bytes);
     return { kind: "free_deflate", payload, text: decoder.decode(restored), meta: "free | deflate raw (base45)" };
   }
   if (payload.startsWith("QZ1K")) {
     const match = payload.match(/^QZ1K(\d+):(.*)$/);
     if (match) {
-      if (typeof pako === "undefined") throw new Error("pako_not_loaded");
       if (!globalDictDecodeBytes) throw new Error("engine_not_loaded");
       const profileId = Number(match[1] || 0);
       const b45 = match[2] || "";
       const bytes = base45ToBytes(b45);
-      const restored = pako.inflateRaw(bytes);
+      const restored = safeInflate(bytes);
       const utf8 = globalDictDecodeBytes(profileId, restored);
       return { kind: "free_deflate_dict", payload, text: decoder.decode(utf8), meta: `free | deflate+dict${profileId} (base45)` };
     }
   }
   if (payload.startsWith("QZ1U:")) {
-    if (typeof pako === "undefined") throw new Error("pako_not_loaded");
     if (!globalParseInlineDictBlob) throw new Error("engine_not_loaded");
     const blob = base45ToBytes(payload.slice(5));
     const parsed = globalParseInlineDictBlob(blob);
-    const restored = pako.inflateRaw(parsed.deflateBytes);
+    const restored = safeInflate(parsed.deflateBytes);
     const utf8 = globalInlineDictDecodeBytes(parsed.entriesBytes, restored);
     return { kind: "free_deflate_inline", payload, text: decoder.decode(utf8), meta: "free | deflate+inlineDict (base45)" };
   }
@@ -315,16 +328,14 @@ export async function decodeQrzipPayload(payload, apiGet = null) {
       return { kind: "free_text", payload, text: decoder.decode(bytes.slice(4)), meta: "free | raw utf8 (byte-mode)" };
     }
     if (method === "D") {
-      if (typeof pako === "undefined") throw new Error("pako_not_loaded");
-      const restored = pako.inflateRaw(bytes.slice(4));
+      const restored = safeInflate(bytes.slice(4));
       return { kind: "free_deflate", payload, text: decoder.decode(restored), meta: "free | deflate raw (byte-mode)" };
     }
     if (method === "K") {
-      if (typeof pako === "undefined") throw new Error("pako_not_loaded");
       if (!globalDictDecodeBytes) throw new Error("engine_not_loaded");
       if (bytes.length < 5) throw new Error("invalid_dict_frame");
       const profileId = bytes[4];
-      const restored = pako.inflateRaw(bytes.slice(5));
+      const restored = safeInflate(bytes.slice(5));
       const utf8 = globalDictDecodeBytes(profileId, restored);
       return { kind: "free_deflate_dict", payload, text: decoder.decode(utf8), meta: `free | deflate+dict${profileId} (byte-mode)` };
     }
@@ -339,11 +350,10 @@ export async function decodeQrzipPayload(payload, apiGet = null) {
       return { kind: "free_fixed", payload, text: decodeFixedFromBytes(profileKey, bitLength, dataBytes), meta: `free | fixed ${profileKey || "unknown"} (byte-mode)` };
     }
     if (method === "U") {
-      if (typeof pako === "undefined") throw new Error("pako_not_loaded");
       if (!globalParseInlineDictBlob) throw new Error("engine_not_loaded");
       const blob = bytes.slice(4);
       const parsed = globalParseInlineDictBlob(blob);
-      const restored = pako.inflateRaw(parsed.deflateBytes);
+      const restored = safeInflate(parsed.deflateBytes);
       const utf8 = globalInlineDictDecodeBytes(parsed.entriesBytes, restored);
       return { kind: "free_deflate_inline", payload, text: decoder.decode(utf8), meta: "free | deflate+inlineDict (byte-mode)" };
     }
@@ -351,63 +361,85 @@ export async function decodeQrzipPayload(payload, apiGet = null) {
       if (bytes.length < 8) throw new Error("invalid_arithmetic_frame");
       const symCount = (bytes[4] << 8) | bytes[5];
       const tableLen = (bytes[6] << 8) | bytes[7];
-      if (typeof pako === "undefined") throw new Error("pako_not_loaded");
       const tableDeflate = bytes.slice(8, 8 + tableLen);
       const bitstreamBytes = bytes.slice(8 + tableLen);
-      const tableJson = decoder.decode(pako.inflateRaw(tableDeflate));
+      const tableJson = decoder.decode(safeInflate(tableDeflate));
       const tableArr = JSON.parse(tableJson);
       return { kind: "free_arithmetic", payload, text: arithmeticDecode(symCount, tableArr, bitstreamBytes), meta: "free | arithmetic coding (byte-mode)" };
     }
   }
 
   if (payload.startsWith("QZ1|T|")) {
-    return { kind: "free_text", payload, text: payload.split("|", 3)[2], meta: "free | raw ascii" };
+    return { kind: "free_text", payload, text: payload.substring(6), meta: "free | raw ascii" };
   }
   if (payload.startsWith("QZ1|B|")) {
-    return { kind: "free_text", payload, text: decoder.decode(base64UrlToBytes(payload.split("|", 3)[2])), meta: "free | utf8 base64url" };
+    return { kind: "free_text", payload, text: decoder.decode(base64UrlToBytes(payload.substring(6))), meta: "free | utf8 base64url" };
   }
   if (payload.startsWith("QZ1|D|")) {
-    if (typeof pako === "undefined") throw new Error("pako_not_loaded");
-    const bytes = base64UrlToBytes(payload.split("|", 3)[2]);
-    const restored = pako.inflateRaw(bytes);
+    const bytes = base64UrlToBytes(payload.substring(6));
+    const restored = safeInflate(bytes);
     return { kind: "free_deflate", payload, text: decoder.decode(restored), meta: "free | deflate raw" };
   }
   if (payload.startsWith("QZ1|K|")) {
-    if (typeof pako === "undefined") throw new Error("pako_not_loaded");
     if (!globalDictDecodeBytes) throw new Error("engine_not_loaded");
     const parts = payload.split("|");
     const profileId = Number(parts[2] || 0);
-    const dataB64Url = parts[3] || "";
+    const dataB64Url = parts.slice(3).join("|") || "";
     const bytes = base64UrlToBytes(dataB64Url);
-    const restored = pako.inflateRaw(bytes);
+    const restored = safeInflate(bytes);
     const utf8 = globalDictDecodeBytes(profileId, restored);
     return { kind: "free_deflate_dict", payload, text: decoder.decode(utf8), meta: `free | deflate+dict${profileId}` };
   }
   if (payload.startsWith("QZ1|U|")) {
-    if (typeof pako === "undefined") throw new Error("pako_not_loaded");
     if (!globalParseInlineDictBlob) throw new Error("engine_not_loaded");
-    const blob = base64UrlToBytes(payload.split("|", 3)[2]);
+    const blob = base64UrlToBytes(payload.substring(6));
     const parsed = globalParseInlineDictBlob(blob);
-    const restored = pako.inflateRaw(parsed.deflateBytes);
+    const restored = safeInflate(parsed.deflateBytes);
     const utf8 = globalInlineDictDecodeBytes(parsed.entriesBytes, restored);
     return { kind: "free_deflate_inline", payload, text: decoder.decode(utf8), meta: "free | deflate+inlineDict" };
   }
   if (payload.startsWith("QZ1|L|")) {
-    return { kind: "free_lz_compact", payload, text: decodeLzCompactPayload(payload.split("|", 3)[2]), meta: "free | lz compact" };
+    return { kind: "free_lz_compact", payload, text: decodeLzCompactPayload(payload.substring(6)), meta: "free | lz compact" };
   }
   if (payload.startsWith("QZ1|F|")) {
-    const [, , profile, bitLength, data] = payload.split("|");
+    const parts = payload.split("|");
+    const profile = parts[2];
+    const bitLength = parts[3];
+    const data = parts.slice(4).join("|");
     return { kind: "free_fixed", payload, text: decodeFixedPayload(profile, bitLength, data), meta: `free | fixed ${profile}` };
   }
   if (payload.startsWith("QZ1|A|")) {
     const parts = payload.split("|");
     const symCount = Number(parts[2] || 0);
     const tableDeflateBytes = base64UrlToBytes(parts[3] || "");
-    const bitstreamBytes = base64UrlToBytes(parts[4] || "");
-    if (typeof pako === "undefined") throw new Error("pako_not_loaded");
-    const tableJson = decoder.decode(pako.inflateRaw(tableDeflateBytes));
+    const bitstreamBytes = base64UrlToBytes(parts.slice(4).join("|") || "");
+    const tableJson = decoder.decode(safeInflate(tableDeflateBytes));
     const tableArr = JSON.parse(tableJson);
     return { kind: "free_arithmetic", payload, text: arithmeticDecode(symCount, tableArr, bitstreamBytes), meta: "free | arithmetic coding" };
+  }
+  if (payload.startsWith("QZ1|G|")) {
+    // format: QZ1|G|<codeBits>|<symCount>|<tableB64url>|<dataB64url>
+    const parts = payload.split("|");
+    const codeBits = Number(parts[2] || 0);
+    const symCount = Number(parts[3] || 0);
+    const tableDeflateBytes = base64UrlToBytes(parts[4] || "");
+    const dataB64url = parts.slice(5).join("|") || "";
+    const tableJson = decoder.decode(safeInflate(tableDeflateBytes));
+    const codebook = JSON.parse(tableJson); // array of strings
+    // decode bitstream
+    const dataBytes = base64UrlToBytes(dataB64url);
+    let bits = "";
+    for (let i = 0; i < dataBytes.length; i++) {
+      bits += dataBytes[i].toString(2).padStart(8, "0");
+    }
+    let out = "";
+    let decoded = 0;
+    for (let i = 0; i + codeBits <= bits.length && decoded < symCount; i += codeBits) {
+      const code = parseInt(bits.slice(i, i + codeBits), 2);
+      out += codebook[code] || "";
+      decoded++;
+    }
+    return { kind: "free_tunstall", payload, text: out, meta: `free | tunstall (${codeBits}b/codeword, ${codebook.length} codes)` };
   }
   throw new Error("unsupported_payload");
 }
