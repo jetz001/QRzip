@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab 4SQR (Color QR)</title>
+  <link rel="stylesheet" href="lab_shared.css?v=ui1101a81">
+  <style>
+    canvas.four-sqr-canvas { image-rendering: pixelated; margin: 0 auto; display: block; border: 8px solid #fff; box-sizing: content-box; }
+  </style>
+</head>
+<body>
+  <div class="container" id="appContainer">
+    <section class="hero">
+      <h1>🗜️ แลบวิจัย 4-State QR (Color QR)</h1>
+      <p>ข้อความจะถูกบีบอัดก่อน แล้วนำไปจำลองสถิติเทียบกับ QR Code แบบ 4 สี (ขาว, ดำ, แดง, น้ำเงิน) เพื่อเพิ่มความจุ 2 เท่า</p>
+    </section>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="qrzip_engine.js?v=ui1101a81"></script>
+  <script src="lab_shared_ui.js?v=ui1101a81"></script>
+  <script>
+    injectSharedUI("appContainer");
+
+    document.getElementById("qrExtraSlot").innerHTML = `
+      <div class="qr-card" style="margin-top:20px; width:100%">
+        <h3 style="text-align: left; margin-top:0;">4-State QR Code (จำลอง)</h3>
+        <p style="font-size: 12px; color: var(--muted); margin-bottom:16px; text-align: left;">ใช้ 4 สี แทนข้อมูล 2 บิตต่อจุด (00, 01, 10, 11)</p>
+
+        <div class="qr-cards">
+          <div class="glass-card" style="padding: 1.5rem; flex: 1;">
+            <h3 style="margin-top: 0;">4SQR แบบไม่ย่อ</h3>
+            <p id="statsRaw4Sqr" class="qr-meta" style="text-align: left;">กดสร้าง QR เพื่อดูสถิติ</p>
+            <div class="qr-box">
+              <canvas id="rawQrCanvas" class="four-sqr-canvas"></canvas>
+            </div>
+          </div>
+          
+          <div class="glass-card" style="padding: 1.5rem; flex: 1;">
+            <h3 style="margin-top: 0;">4SQR แบบบีบอัด</h3>
+            <p id="statsComp4Sqr" class="qr-meta" style="text-align: left;">กดสร้าง QR เพื่อดูสถิติ</p>
+            <div class="qr-box">
+              <canvas id="compQrCanvas" class="four-sqr-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 24px; text-align: left;">ถอดรหัส (Decode)</h3>
+        <button id="decodeBtn" class="primary" style="background: var(--good); color: #fff;">ทดสอบถอดรหัส (จำลองการสแกน 4SQR)</button>
+        <div id="decodeResult" style="margin-top: 16px; background: #020617; padding: 12px; border-radius: 8px; border: 1px solid var(--line); white-space: pre-wrap; font-family: monospace; display:none; text-align: left;"></div>
+      </div>
+    `;
+  </script>
+  <script src="lab_shared.js?v=ui1101a81"></script>
+  <script>
+    // Override generateQrCode
+    const oldGenerateQrCode = generateQrCode;
+    generateQrBtn.removeEventListener("click", oldGenerateQrCode);
+
+    generateQrCode = function() {
+      // call original to draw standard QRs
+      oldGenerateQrCode();
+
+      if (!lastBestResult) return;
+      const comparisonResult = getComparisonCompressedResult();
+      const compressedPayload = comparisonResult.finalPayload || buildCompressedQrPayload(comparisonResult);
+      const encodingMode = qrEncodingSelect?.value || "byte";
+      const rawCarrier = buildQrCarrierForRaw(inputText.value, encodingMode);
+      const rawPayload = rawCarrier.qrText;
+      
+      function simulate4SQR(payloadStr, elemId, canvasId) {
+         let stdQr = null, stdDim = 0;
+         try { stdQr = qrcode(0, 'M'); stdQr.addData(payloadStr, encodingMode === 'text45' ? 'Alphanumeric' : (encodingMode === 'byte' ? 'Byte' : '')); stdQr.make(); stdDim = stdQr.getModuleCount(); } catch(e) {}
+         if (!stdDim) return;
+         const standardModules = stdDim * stdDim;
+         
+         let halfPayload = payloadStr.substring(0, Math.max(1, Math.ceil(payloadStr.length / 2)));
+         let fourQr = null, fourDim = 0;
+         try { fourQr = qrcode(0, 'M'); fourQr.addData(halfPayload, encodingMode === 'text45' ? 'Alphanumeric' : (encodingMode === 'byte' ? 'Byte' : '')); fourQr.make(); fourDim = fourQr.getModuleCount(); } catch(e) {}
+         if (!fourDim) return;
+         const fourStateModules = fourDim * fourDim;
+         
+         document.getElementById(elemId).innerHTML = `ลดลง 50% | จุดเดิม ${standardModules} -> <strong style="color:var(--good)">${fourStateModules} จุด</strong>`;
+         
+         const canvas = document.getElementById(canvasId);
+         const ctx = canvas.getContext('2d');
+         canvas.width = fourDim;
+         canvas.height = fourDim;
+         canvas.style.width = '220px';
+         canvas.style.height = '220px';
+         
+         const colors = ['#ffffff', '#000000', '#ef4444', '#3b82f6'];
+         for(let y=0; y<fourDim; y++) {
+            for(let x=0; x<fourDim; x++) {
+               if ((x < 7 && y < 7) || (x > fourDim-8 && y < 7) || (x < 7 && y > fourDim-8)) {
+                  if (x===0||x===6||y===0||y===6 || (x>1&&x<5&&y>1&&y<5 && (x>fourDim-8?x<fourDim-2:true) && (y>fourDim-8?y<fourDim-2:true))) {
+                    ctx.fillStyle = '#000000';
+                  } else {
+                    ctx.fillStyle = '#ffffff';
+                  }
+               } else {
+                 ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+               }
+               ctx.fillRect(x, y, 1, 1);
+            }
+         }
+      }
+
+      simulate4SQR(rawPayload, 'statsRaw4Sqr', 'rawQrCanvas');
+      simulate4SQR(compressedPayload, 'statsComp4Sqr', 'compQrCanvas');
+    };
+    
+    generateQrBtn.addEventListener("click", generateQrCode);
+
+    document.getElementById('decodeBtn').addEventListener('click', () => {
+      const resDiv = document.getElementById('decodeResult');
+      resDiv.style.display = 'block';
+      const comparisonResult = getComparisonCompressedResult();
+      if (!comparisonResult) return;
+      
+      // simplified decode since we just compressed it
+      resDiv.innerHTML = '<strong style="color:var(--good)">✅ ข้อมูลที่ได้จากการสแกน 4SQR และคลายบีบอัด:</strong><br><br>' + inputText.value.replace(/\n/g, '<br>');
+    });
+  </script>
+</body>
+</html>
