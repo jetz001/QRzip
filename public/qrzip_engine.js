@@ -1172,7 +1172,7 @@ function rankResults(results, objective, densityThreshold) {
 function evaluateMethod(method, text) {
   const engine = compressors[method];
   try {
-    const encodingMode = typeof window !== "undefined" && window.qrEncodingSelect ? window.qrEncodingSelect.value : "byte";
+    const encodingMode = typeof window !== "undefined" && window.qrEncodingSelect ? window.qrEncodingSelect.value : "text";
     const payload = engine.compress(text);
     const serialized = serializePayload(payload);
     const decoded = engine.decompress(payload);
