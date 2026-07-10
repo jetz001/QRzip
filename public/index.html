@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QRzip — Compress. Encode. Deliver.</title>
+  <meta name="description" content="QRzip compresses text with lossless algorithms then converts it to the smallest possible QR Code. Supports Thai, English, and AI-efficient encoding." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    .mode-label.active { background: white; box-shadow: var(--shadow); border-color: var(--accent1) !important; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #ffffff;
+      --bg2:       #f4f7ff;
+      --bg3:       #ffffff;
+      --accent1:   #4f46e5;
+      --accent2:   #06b6d4;
+      --accent3:   #ec4899;
+      --text:      #0f172a;
+      --text2:     #334155;
+      --muted:     #64748b;
+      --border:    rgba(79,70,229,.15);
+      --glass-bg:  rgba(255,255,255,.8);
+      --glass-bdr: rgba(79,70,229,.12);
+      --shadow:    0 10px 40px rgba(79,70,229,.08);
+      --shadow-lg: 0 20px 60px rgba(79,70,229,.16);
+      --radius:    24px;
+      --radius-sm: 14px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--accent1); border-radius: 4px; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes slideDown  { from { opacity:0; transform:translateY(-20px) } to { opacity:1; transform:none } }
+    @keyframes fadeUp     { from { opacity:0; transform:translateY(30px)  } to { opacity:1; transform:none } }
+    @keyframes gradShift  { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+    @keyframes drift      { from{transform:translate(0,0) scale(1)} to{transform:translate(40px,30px) scale(1.08)} }
+    @keyframes pulse      { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.85)} }
+    @keyframes spin       { to{transform:rotate(360deg)} }
+    @keyframes popIn      { 0%{opacity:0;transform:scale(.92)} 100%{opacity:1;transform:scale(1)} }
+    @keyframes float      { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-20px) rotate(3deg)} }
+    @keyframes floatReverse{ 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(15px) rotate(-2deg)} }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 5vw;
+      background: rgba(255,255,255,.9);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--glass-bdr);
+      box-shadow: 0 4px 20px rgba(0,0,0,.03);
+      animation: slideDown .6s ease both;
+    }
+    .logo { font-size: 1.6rem; font-weight: 900; letter-spacing: -.5px; background: linear-gradient(135deg, var(--accent1), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .logo span { font-weight: 300; opacity: .7; }
+    .nav-badge { font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent1); border: 1px solid rgba(79,70,229,.25); padding: 6px 14px; border-radius: 50px; background: rgba(79,70,229,.05); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh; display: grid; grid-template-columns: 1.05fr 0.95fr;
+      align-items: center; gap: 40px;
+      padding: 140px 5vw 80px; position: relative; overflow: hidden;
+      max-width: 1280px; margin: 0 auto;
+    }
+    .hero-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .hero-bg::before, .hero-bg::after { content: ''; position: absolute; border-radius: 50%; filter: blur(140px); animation: drift 14s ease-in-out infinite alternate; }
+    .hero-bg::before { width: 700px; height: 700px; background: radial-gradient(circle, rgba(79,70,229,.15) 0%, transparent 70%); top: -150px; left: -150px; }
+    .hero-bg::after  { width: 600px; height: 600px; background: radial-gradient(circle, rgba(6,182,212,.12) 0%, transparent 70%); bottom: -100px; right: -100px; animation-delay: -7s; }
+
+    .hero-left { position: relative; z-index: 1; }
+    .hero-right { position: relative; z-index: 1; display: flex; justify-content: center; align-items: center; }
+
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: .8rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--accent1);
+      border: 1px solid rgba(79,70,229,.25); padding: 8px 18px; border-radius: 50px; background: rgba(79,70,229,.08);
+      margin-bottom: 28px; animation: fadeUp .8s .2s ease both;
+    }
+    .hero-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent1); animation: pulse 2s infinite; }
+
+    .hero-headline { font-size: clamp(2.6rem, 4.8vw, 4.4rem); font-weight: 900; line-height: 1.08; letter-spacing: -.03em; margin-bottom: 24px; animation: fadeUp .8s .35s ease both; color: var(--text); }
+    .gradient-text { background: linear-gradient(135deg, var(--accent1) 0%, var(--accent2) 50%, var(--accent3) 100%); background-size: 200% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: gradShift 5s ease infinite; }
+
+    .hero-sub { font-size: 1.1rem; font-weight: 400; color: var(--text2); line-height: 1.7; margin-bottom: 36px; animation: fadeUp .8s .5s ease both; max-width: 540px; }
+
+    /* ── STATS PILLS ── */
+    .stats-pills { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 36px; animation: fadeUp .8s .65s ease both; }
+    .pill { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 700; color: var(--text2); background: white; border: 1px solid var(--glass-bdr); padding: 8px 16px; border-radius: 50px; box-shadow: 0 4px 12px rgba(0,0,0,.04); transition: transform .2s, box-shadow .2s; }
+    .pill:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.08); }
+    .pill-icon { font-size: 1.1rem; }
+
+    /* ── GRAPHICS ── */
+
+
+    /* ── DEMO CARD (Hero Right) ── */
+    .demo-card {
+      background: white; border-radius: var(--radius);
+      box-shadow: var(--shadow-lg); border: 1px solid var(--glass-bdr);
+      padding: 32px; animation: fadeUp .8s .4s ease both;
+      position: relative; width: 100%; max-width: 480px; z-index: 2;
+    }
+    .demo-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .demo-card-title { font-size: .95rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--accent1); }
+    .algo-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .75rem; font-weight: 700; color: var(--accent2);
+      background: rgba(6,182,212,.08); border: 1px solid rgba(6,182,212,.2);
+      padding: 6px 12px; border-radius: 50px;
+    }
+    .algo-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+
+    textarea#qr-input, textarea#decode-input {
+      width: 100%; height: 110px; resize: vertical;
+      font-family: 'Outfit', monospace; font-size: 1rem; line-height: 1.5;
+      border: 2px solid var(--glass-bdr); border-radius: var(--radius-sm);
+      padding: 16px; background: var(--bg2); color: var(--text);
+      transition: border-color .2s, box-shadow .2s, background .2s; outline: none;
+    }
+    textarea#qr-input:focus, textarea#decode-input:focus { border-color: var(--accent1); background: white; box-shadow: 0 0 0 4px rgba(79,70,229,.1); }
+    textarea#qr-input::placeholder, textarea#decode-input::placeholder { color: var(--muted); }
+
+    /* stats row */
+    .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
+    .stat-box { background: var(--bg2); border: 1px solid var(--glass-bdr); border-radius: var(--radius-sm); padding: 12px; text-align: center; transition: transform .2s; }
+    .stat-box:hover { transform: translateY(-2px); }
+    .stat-box .val { font-size: 1.2rem; font-weight: 900; color: var(--accent1); }
+    .stat-box .lbl { font-size: .7rem; color: var(--muted); margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+
+    /* algo info row */
+    .algo-row { display: flex; align-items: center; gap: 8px; margin: 12px 0; font-size: .8rem; color: var(--muted); }
+    .algo-name { font-weight: 800; color: var(--accent1); background: rgba(79,70,229,.08); padding: 4px 10px; border-radius: 8px; }
+
+    .generate-btn {
+      width: 100%; font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 800;
+      color: white; background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      border: none; border-radius: 50px; padding: 16px 24px; cursor: pointer;
+      box-shadow: 0 6px 24px rgba(79,70,229,.35);
+      transition: transform .2s, box-shadow .2s; margin-top: 8px;
+    }
+    .generate-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(79,70,229,.45); }
+    .generate-btn:active { transform: translateY(0); }
+
+    .mode-toggle { display: flex; background: var(--bg2); border-radius: 50px; padding: 4px; gap: 4px; }
+    .mode-toggle button {
+      background: transparent; border: none; font-family: 'Outfit', sans-serif;
+      font-size: .85rem; font-weight: 700; color: var(--muted);
+      padding: 8px 18px; border-radius: 50px; cursor: pointer; transition: all .2s;
+    }
+    .mode-toggle button.active { background: white; color: var(--accent1); box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+    
+    .btn-secondary {
+      font-family: 'Outfit', sans-serif; font-size: .95rem; font-weight: 700;
+      color: var(--accent1); background: rgba(79,70,229,.08); border: 2px solid rgba(79,70,229,.15);
+      border-radius: 50px; padding: 12px 20px; cursor: pointer; transition: all .2s;
+      display: inline-block;
+    }
+    .btn-secondary:hover { background: rgba(79,70,229,.12); border-color: rgba(79,70,229,.3); }
+
+    /* qr output */
+    .qr-output { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .qr-placeholder { width: 180px; height: 180px; border: 3px dashed var(--glass-bdr); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); font-size: .9rem; font-weight: 600; background: var(--bg2); transition: all .3s; }
+    .qr-placeholder:hover { border-color: var(--accent1); color: var(--accent1); }
+    .qr-placeholder .qr-icon { font-size: 3rem; opacity: .4; }
+    #qr-canvas { display: flex; justify-content: center; }
+    #qr-canvas canvas, #qr-canvas img { border-radius: 12px; box-shadow: var(--shadow); max-width: 180px; transition: transform .3s; }
+    #qr-canvas canvas:hover, #qr-canvas img:hover { transform: scale(1.05); }
+    .qr-meta { font-size: .75rem; color: var(--muted); text-align: center; }
+    .download-btn {
+      display: none; font-family: 'Outfit', sans-serif; font-size: .85rem; font-weight: 700;
+      color: var(--accent1); background: rgba(79,70,229,.08); border: 2px solid rgba(79,70,229,.2);
+      border-radius: 50px; padding: 10px 24px; cursor: pointer; transition: all .2s;
+    }
+    .download-btn.visible { display: block; }
+    .download-btn:hover { background: rgba(79,70,229,.15); }
+
+    .qr-spinner { width: 36px; height: 36px; border: 4px solid var(--bg2); border-top-color: var(--accent1); border-radius: 50%; animation: spin 1s linear infinite; display: none; margin: 20px auto; }
+
+    /* ── STATS STRIP ── */
+    .stats-strip {
+      background: white; border-top: 1px solid var(--glass-bdr); border-bottom: 1px solid var(--glass-bdr);
+      display: flex; justify-content: center; flex-wrap: wrap; gap: 0;
+      position: relative; z-index: 5;
+    }
+    .stat-item { padding: 40px 60px; text-align: center; border-right: 1px solid var(--glass-bdr); flex: 1; }
+    .stat-item:last-child { border-right: none; }
+    .stat-num { font-size: 2.5rem; font-weight: 900; background: linear-gradient(135deg, var(--accent1), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; }
+    .stat-label { font-size: .9rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+
+    /* ── SECTIONS ── */
+    .section { padding: 120px 5vw; position: relative; }
+    .section-inner { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+    .section-label { font-size: .8rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--accent1); margin-bottom: 16px; display: inline-block; background: rgba(79,70,229,.1); padding: 6px 16px; border-radius: 50px; }
+    .section-title { font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 900; line-height: 1.15; letter-spacing: -.02em; margin-bottom: 20px; color: var(--text); }
+    .section-sub { font-size: 1.1rem; color: var(--text2); line-height: 1.7; max-width: 600px; }
+
+    /* ── FEATURES ── */
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 56px; }
+    .feature-card {
+      background: white; border: 1px solid var(--glass-bdr); border-radius: var(--radius);
+      padding: 40px 32px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+      opacity: 0; transform: translateY(30px); transition: opacity .6s, transform .6s, box-shadow .3s;
+    }
+    .feature-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--accent1), var(--accent2)); opacity: 0; transition: opacity .3s; }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-8px) !important; }
+    .feature-card.visible { opacity: 1; transform: translateY(0); }
+    .card-icon { font-size: 2.2rem; margin-bottom: 24px; width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+    .icon-purple { background: rgba(79,70,229,.1); }
+    .icon-cyan   { background: rgba(6,182,212,.1); }
+    .icon-violet { background: rgba(236,72,153,.1); }
+    .card-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 12px; color: var(--text); }
+    .card-desc  { font-size: .95rem; color: var(--muted); line-height: 1.65; margin-bottom: 24px; }
+    .card-tag { font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 6px 14px; border-radius: 50px; display: inline-block; }
+    .tag-purple { background: rgba(79,70,229,.1); color: var(--accent1); }
+    .tag-cyan   { background: rgba(6,182,212,.1); color: var(--accent2); }
+    .tag-violet { background: rgba(236,72,153,.1); color: var(--accent3); }
+
+    /* ── HOW IT WORKS ── */
+    #how { background: var(--bg2); }
+    .how-wrap { display: grid; grid-template-columns: repeat(3,1fr); gap: 40px; margin-top: 56px; }
+    .how-step { opacity: 0; transform: translateY(24px); transition: opacity .6s, transform .6s; background: white; padding: 40px 32px; border-radius: var(--radius); border: 1px solid var(--glass-bdr); box-shadow: var(--shadow); position: relative; z-index: 1;}
+    .how-step.visible { opacity: 1; transform: none; }
+    .step-num { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg,var(--accent1),var(--accent2)); color: white; font-weight: 900; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: 0 6px 20px rgba(79,70,229,.4); }
+    .step-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 12px; color: var(--text); }
+    .step-desc  { font-size: .95rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── CTA BAND ── */
+    .cta-band {
+      background: linear-gradient(135deg, rgba(79,70,229,.05) 0%, rgba(6,182,212,.05) 100%);
+      border-top: 1px solid var(--glass-bdr); border-bottom: 1px solid var(--glass-bdr);
+      text-align: center; padding: 120px 5vw; position: relative;
+    }
+    .cta-band-title { font-size: clamp(2.2rem,4vw,3.2rem); font-weight: 900; letter-spacing: -.02em; margin-bottom: 16px; color: var(--text); }
+    .cta-band-sub   { color: var(--text2); font-size: 1.1rem; margin-bottom: 40px; }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 12px;
+      font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 800; color: white;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      border: none; border-radius: 50px; padding: 18px 48px; cursor: pointer;
+      box-shadow: 0 6px 24px rgba(79,70,229,.35); transition: transform .2s, box-shadow .2s; text-decoration: none;
+    }
+    .btn-primary:hover { transform: translateY(-4px); box-shadow: 0 12px 36px rgba(79,70,229,.45); }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* ── FOOTER ── */
+    footer { background: white; border-top: 1px solid var(--glass-bdr); padding: 48px 5vw; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+    .footer-logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg,var(--accent1),var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .footer-copy  { font-size: .9rem; color: var(--muted); font-weight: 500; }
+    .footer-links { display: flex; gap: 32px; }
+    .footer-links a { font-size: .9rem; font-weight: 600; color: var(--muted); text-decoration: none; transition: color .2s; }
+    .footer-links a:hover { color: var(--accent1); }
+
+    /* ── RESPONSIVE ── */
+
+    /* ── MODALS ── */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:200; align-items:center; justify-content:center; }
+    .modal { background: white; border-radius:16px; width:90%; max-width:400px; padding:24px; box-shadow:0 10px 40px -10px rgba(0,0,0,0.2); color: var(--text); border:1px solid var(--glass-bdr); }
+    .modal.large { max-width: 800px; }
+    .modal input { width:100%; padding:14px; margin-bottom:12px; border-radius:8px; border:1px solid var(--glass-bdr); background:var(--bg2); color:var(--text); font-family:inherit; outline:none; }
+    .modal input:focus { border-color: var(--accent1); }
+    .modal-btn { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-weight: 600; font-family: 'Outfit'; transition: all 0.2s; }
+    .modal-btn.primary { background:var(--accent1); color:white; }
+    .modal-btn.primary:hover { background:var(--accent2); }
+    .modal-btn.secondary { background:transparent; color:var(--muted); }
+    .modal-btn.secondary:hover { color:var(--text); }
+    .member-bar { position: absolute; top: 100px; right: 5vw; background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 50px; border: 1px solid var(--glass-bdr); font-size: 0.85rem; font-weight: 600; box-shadow: var(--shadow); z-index: 10; display: flex; align-items: center; gap: 8px;}
+    @media (max-width: 1024px) {
+      .hero { grid-template-columns: 1fr; padding: 140px 5vw 60px; gap: 48px; text-align: center; }
+      .hero-eyebrow { margin-left: auto; margin-right: auto; }
+      .hero-sub { margin-left: auto; margin-right: auto; }
+      .stats-pills { justify-content: center; }
+      .hero-3d-graphic { right: 0; left: 0; margin: auto; top: -140px; opacity: 0.5; z-index: 0; }
+      .demo-card { margin: 0 auto; z-index: 2; }
+      .features-grid, .how-wrap { grid-template-columns: 1fr; }
+      .blocks-3d-graphic { display: none; }
+      .stats-strip { flex-direction: column; }
+      .stat-item { border-right: none; border-bottom: 1px solid var(--glass-bdr); padding: 32px; }
+    }
+  </style>
+</head>
+<body data-page="home">
+
+<div class="hero-bg"></div>
+
+<!-- NAV -->
+
+<nav>
+  <div class="logo">QR<span>zip</span></div>
+  <div style="display:flex; align-items:center; gap: 16px;">
+    <div class="nav-badge">&#10022; Beta</div>
+    <button id="memberRegisterBtnNav" class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem;">สมัครใช้งาน</button>
+    <button id="memberProfileBtn" class="btn-primary" style="padding: 6px 14px; font-size: 0.8rem; display:none;">โปรไฟล์</button>
+    <a href="./admin.html" class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem; text-decoration: none;">Admin</a>
+  </div>
+</nav>
+
+
+<!-- HERO — text left, QR demo right -->
+<section style="padding-top:80px; background:transparent;">
+  <div class="hero">
+
+    <!-- LEFT: copy -->
+    <div class="hero-left">
+      <div class="hero-eyebrow">
+        <span class="dot"></span>
+        Lossless · Compact · Scannable
+      </div>
+      <h1 class="hero-headline">
+        More Text.<br />
+        <span class="gradient-text">Smaller QR.</span>
+      </h1>
+      <p class="hero-sub">
+        QRzip compresses your text with smart algorithms — then encodes it into the tiniest scannable QR Code possible. Supports Thai, English, and AI-ready payloads.
+      </p>
+      <div class="stats-pills">
+        <div class="pill"><span class="pill-icon">⚡</span> Up to 80% smaller</div>
+        <div class="pill"><span class="pill-icon">🔒</span> 100% Client-side</div>
+        <div class="pill"><span class="pill-icon">🌏</span> Thai &amp; EN</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: live QR demo -->
+    <div class="hero-right">
+      <div class="demo-card">
+        <div class="demo-card-header">
+          <div class="demo-card-title">⚡ Live Demo</div>
+          <div class="mode-toggle">
+            <button id="btn-mode-encode" class="active" onclick="setMode('encode')">Encode</button>
+            <button id="btn-mode-decode" onclick="setMode('decode')">Decode</button>
+          </div>
+        </div>
+
+        <div id="view-encode">
+
+          <div style="display:flex; gap:12px; margin-bottom:16px; background:var(--bg2); padding:6px; border-radius:12px; border:1px solid var(--glass-bdr);">
+            <label style="flex:1; cursor:pointer; padding:8px 12px; border-radius:8px; display:flex; align-items:center; gap:8px; transition:all 0.2s;" id="labelModeOffline" class="mode-label active">
+              <input type="radio" name="createMode" value="offline" checked style="accent-color:var(--accent1); width:16px; height:16px;" onchange="toggleCreateMode(this.value)">
+              <div style="display:flex; flex-direction:column;">
+                <span style="font-weight:700; font-size:14px; color:var(--text);">Offline QR (Free)</span>
+              </div>
+            </label>
+            <label style="flex:1; cursor:pointer; padding:8px 12px; border-radius:8px; display:flex; align-items:center; gap:8px; transition:all 0.2s;" id="labelModeMember" class="mode-label">
+              <input type="radio" name="createMode" value="member" style="accent-color:var(--accent2); width:16px; height:16px;" onchange="toggleCreateMode(this.value)">
+              <div style="display:flex; flex-direction:column;">
+                <span style="font-weight:700; font-size:14px; color:var(--text);">Short QR (Cloud)</span>
+              </div>
+            </label>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+            <div class="algo-badge">
+              <span class="algo-dot"></span>
+              Algorithm: <span id="algo-name-badge">—</span>
+            </div>
+          </div>
+
+          <textarea id="qr-input" placeholder="Type or paste text here... (Thai &amp; English supported)"></textarea>
+
+          <div class="stat-row">
+            <div class="stat-box"><div class="val" id="stat-original">—</div><div class="lbl">Original (B)</div></div>
+            <div class="stat-box"><div class="val" id="stat-compressed">—</div><div class="lbl">Encoded (B)</div></div>
+            <div class="stat-box"><div class="val" id="stat-saving">—</div><div class="lbl">Saved</div></div>
+          </div>
+
+          <div class="algo-row" id="algo-row" style="display:none;">
+            Using algorithm: <span class="algo-name" id="algo-name-text">—</span>
+          </div>
+
+          <button id="mainCreateBtn" class="generate-btn">⚡ Generate QR Code &nbsp;·&nbsp; Ctrl+Enter</button>
+
+          <div class="qr-spinner" id="qr-spinner"></div>
+
+          <div class="qr-output">
+            <div id="qr-placeholder" class="qr-placeholder">
+              <div class="qr-icon">&#9638;</div>
+              <span>QR appears here</span>
+            </div>
+            <div id="qr-canvas"></div>
+            <div class="qr-meta" id="qr-meta" style="display:none;"></div>
+            <button class="download-btn" id="download-btn" onclick="downloadQR()">&#8595; Download PNG</button>
+          </div>
+        </div>
+
+        <div id="view-decode" style="display:none;">
+          <textarea id="decode-input" placeholder="Paste QZ1 payload here (e.g. QZ1:L:...)"></textarea>
+          
+          <div class="decode-actions" style="display:flex; gap: 12px; margin-top: 16px;">
+            <label class="btn-secondary" style="flex: 1; text-align:center; cursor:pointer;">
+              📷 Upload Image
+              <input type="file" id="scanQrFile" accept="image/*" style="display:none;" />
+            </label>
+            <button id="cameraScanBtn" class="btn-secondary" style="flex: 1; margin-top:0;">🎥 Scan Camera</button>
+            <button id="manualDecodeBtn" class="generate-btn" style="flex: 1; margin-top:0;">🔓 Decode Text</button>
+          </div>
+          
+          <div id="qr-reader" style="display:none;"></div>
+          
+          <div id="cameraContainer" style="display:none; text-align:center; margin-top:16px; background:var(--bg2); border-radius:12px; padding:12px;">
+            <div id="camera-reader" style="margin: 0 auto; max-width:100%; border-radius:8px; overflow:hidden;"></div>
+            <button id="cameraStopBtn" class="btn-secondary" style="margin-top:12px; width:100%; padding:8px; border-radius:8px; background:var(--bg); border:1px solid var(--border);">⏹ Stop Camera</button>
+          </div>
+          
+          <div style="text-align:center; margin-top:12px;">
+            <img id="scanPreview" style="display:none; max-width:200px; margin:0 auto; border-radius:8px;" />
+            <div id="scanStatus" style="margin-top:8px; font-weight:600; color:var(--accent1);"></div>
+          </div>
+
+          <div class="decode-output-box" style="margin-top: 24px;">
+            <div class="section-label" style="margin-bottom:12px; font-size:.7rem;">Decoded Result</div>
+            <div id="decode-result" style="min-height: 100px; padding: 16px; background: var(--bg2); border-radius: var(--radius-sm); border: 1px solid var(--glass-bdr); font-size: 1rem; white-space: pre-wrap; word-break: break-word; color: var(--text);">No data yet.</div>
+            <div id="scanFreeHint" style="margin-top:8px; font-size:0.85rem; color:var(--muted); text-align:center;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="stat-item"><div class="stat-num">~80%</div><div class="stat-label">Max Size Reduction</div></div>
+  <div class="stat-item"><div class="stat-num">&lt;100ms</div><div class="stat-label">Avg. Encode Time</div></div>
+  <div class="stat-item"><div class="stat-num">9</div><div class="stat-label">Compression Algorithms</div></div>
+  <div class="stat-item"><div class="stat-num">100%</div><div class="stat-label">Lossless · Zero data loss</div></div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-inner">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">Built for Precision.<br />Designed for <span class="gradient-text">Scale.</span></h2>
+    <p class="section-sub">Everything you need to encode more data into less space — without losing a single bit.</p>
+    <div class="features-grid">
+      <div class="feature-card" data-delay="0">
+        <div class="card-icon icon-purple">⚡</div>
+        <div class="card-title">Smart Algorithm Selection</div>
+        <div class="card-desc">QRzip auto-selects the best algorithm per input — Deflate, Huffman, LZ, Arithmetic, Tunstall, and more. You always get the smallest possible payload.</div>
+        <span class="card-tag tag-purple">Auto · 9 Algorithms</span>
+      </div>
+      <div class="feature-card" data-delay="150">
+        <div class="card-icon icon-cyan">🔒</div>
+        <div class="card-title">Fully Client-Side</div>
+        <div class="card-desc">All compression and QR generation happens in your browser. Your text never touches a server — no logs, no leaks. Privacy by design.</div>
+        <span class="card-tag tag-cyan">Client-Side · No Server</span>
+      </div>
+      <div class="feature-card" data-delay="300">
+        <div class="card-icon icon-violet">🌏</div>
+        <div class="card-title">Thai &amp; English Ready</div>
+        <div class="card-desc">Full Unicode support with AI token-efficient encoding. Handles Thai script, mixed-language payloads, and developer data formats natively.</div>
+        <span class="card-tag tag-violet">Unicode · AI-Ready</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="section-inner">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-title">Three steps to a <span class="gradient-text">compact QR.</span></h2>
+    <p class="section-sub">From raw text to scannable QR in milliseconds — simple by design.</p>
+    <div class="how-wrap">
+      <div class="how-step" data-delay="0">
+        <div class="step-num">1</div>
+        <div class="step-title">Paste or type your text</div>
+        <div class="step-desc">Drop in any text — a URL, JSON, a Thai message, or a developer token. No setup needed.</div>
+      </div>
+      <div class="how-step" data-delay="150">
+        <div class="step-num">2</div>
+        <div class="step-title">QRzip picks the best algorithm</div>
+        <div class="step-desc">Our engine benchmarks 9 lossless algorithms and auto-selects the one that produces the smallest encoded payload for your specific text.</div>
+      </div>
+      <div class="how-step" data-delay="300">
+        <div class="step-num">3</div>
+        <div class="step-title">Get a compact, scannable QR</div>
+        <div class="step-desc">QR is generated instantly in your browser. Download PNG, embed, or share — readable by any camera app.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BAND -->
+<div class="cta-band">
+  <div class="section-label" style="margin-bottom:16px;">Get Started</div>
+  <h2 class="cta-band-title">Ready to shrink your<br /><span class="gradient-text">QR footprint?</span></h2>
+  <p class="cta-band-sub">Join developers and businesses encoding smarter with QRzip.</p>
+  <a href="#qr-input" class="btn-primary">&#9889; Start Compressing Free</a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">QRzip</div>
+  <div class="footer-copy">&copy; 2026 QRzip. All rights reserved.</div>
+  <div class="footer-links">
+    <a href="#">Docs</a>
+    <a href="#">GitHub</a>
+    <a href="#">Privacy</a>
+  </div>
+</footer>
+
+<!-- Member Status Indicator -->
+    <div class="member-bar">
+      <span>🔑 Account Status:</span>
+      <span id="memberState">Checking...</span>
+    </div>
+
+  
+<!-- User Registration Modal -->
+  <div id="userRegisterModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:100; align-items:center; justify-content:center;">
+    <div class="modal" style="background:#0f172a; border-radius:16px; width:90%; max-width:400px; padding:24px; box-shadow:0 10px 40px -10px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); color:#fff;">
+      <h3 style="margin:0 0 16px 0;">สมัครสมาชิก (ผูกเครื่องนี้)</h3>
+      <p style="color:#94a3b8; font-size:14px; margin-top:0; margin-bottom:20px;">
+        กรุณากรอกข้อมูลเพื่อสร้างรหัสสมาชิกและผูกกับเบราว์เซอร์นี้
+      </p>
+      <input type="text" id="userRegName" placeholder="ชื่อของคุณ" style="width:100%; padding:14px; margin-bottom:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff; font-family:inherit;" />
+      <input type="email" id="userRegEmail" placeholder="อีเมลของคุณ" style="width:100%; padding:14px; margin-bottom:20px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff; font-family:inherit;" />
+      <div style="display:flex; justify-content:flex-end; gap:12px;">
+        <button style="padding:10px 16px; background:transparent; border:none; color:#fff; cursor:pointer;" onclick="document.getElementById('userRegisterModal').style.display='none'">ยกเลิก</button>
+        <button style="padding:10px 16px; background:var(--primary); border:none; color:#fff; border-radius:8px; cursor:pointer;" onclick="submitUserRegistration()">ยืนยันสมัครสมาชิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Member Profile Modal -->
+  <div id="memberProfileModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:100; align-items:center; justify-content:center;">
+    <div class="modal" style="background:#0f172a; border-radius:16px; width:90%; max-width:800px; padding:24px; box-shadow:0 10px 40px -10px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); color:#fff;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:16px; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:20px;">Profile & History</h3>
+        <button onclick="document.getElementById('memberProfileModal').style.display='none'" style="background:none; border:none; cursor:pointer; font-size:24px; color:#94a3b8;">&times;</button>
+      </div>
+      
+      <div style="margin-bottom:24px; display:flex; gap:24px; align-items:center;">
+        <div style="flex:1;">
+          <div style="font-size:14px; color:#94a3b8;">Member ID</div>
+          <div id="profileMemberId" style="font-weight:600; font-size:16px;">-</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:14px; color:#94a3b8;">Name</div>
+          <div id="profileMemberName" style="font-weight:600; font-size:16px;">-</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:14px; color:#94a3b8;">Plan</div>
+          <div id="profileMemberPlan" style="font-weight:600; font-size:16px; color:#3b82f6;">-</div>
+        </div>
+      </div>
+      
+      <h4 style="margin:0 0 12px 0;">ประวัติการสร้าง QR Code</h4>
+      <div style="max-height:400px; overflow-y:auto; border:1px solid rgba(255,255,255,0.1); border-radius:8px;">
+        <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:left;">
+          <thead style="background:rgba(255,255,255,0.05); position:sticky; top:0;">
+            <tr>
+              <th style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.1);">Date</th>
+              <th style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.1);">Mode</th>
+              <th style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.1);">Text / Payload</th>
+              <th style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.1);">Action</th>
+            </tr>
+          </thead>
+          <tbody id="profileHistoryTable">
+            <tr><td colspan="4" style="text-align:center; padding:20px; color:#94a3b8;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Preview Modal -->
+  <div id="qrPreviewModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(6px); z-index:110; align-items:center; justify-content:center;">
+    <div class="modal" style="background:#fff; border-radius:16px; padding:32px; box-shadow:0 10px 40px -10px rgba(0,0,0,0.5); text-align:center; position:relative;">
+      <button onclick="document.getElementById('qrPreviewModal').style.display='none'" style="position:absolute; top:12px; right:12px; background:none; border:none; cursor:pointer; font-size:24px; color:#64748b;">&times;</button>
+      <h3 style="margin:0 0 16px 0; color:#0f172a;">Member QR</h3>
+      <div id="qrPreviewContainer" style="margin: 0 auto; min-width:220px; min-height:220px; display:flex; justify-content:center; align-items:center;"></div>
+    </div>
+  </div>
+
+  
+
+<script>
+// ── UI Mode Switch (Encode/Decode) ──
+function setMode(mode) {
+  document.getElementById('btn-mode-encode').classList.toggle('active', mode === 'encode');
+  document.getElementById('btn-mode-decode').classList.toggle('active', mode === 'decode');
+  document.getElementById('view-encode').style.display = (mode === 'encode') ? 'block' : 'none';
+  document.getElementById('view-decode').style.display = (mode === 'decode') ? 'block' : 'none';
+}
+
+// ── Scroll animations ──
+function observe(selector) {
+  const els = document.querySelectorAll(selector);
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const d = parseInt(entry.target.dataset.delay || 0);
+        setTimeout(() => entry.target.classList.add('visible'), d);
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  els.forEach(el => obs.observe(el));
+}
+observe('.feature-card');
+observe('.how-step');
+
+// smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+function downloadQR() {
+  const c = document.querySelector('#qr-canvas canvas');
+  const img = document.querySelector('#qr-canvas img');
+  const link = document.createElement('a');
+  link.download = 'qrzip.png';
+  if (c) { link.href = c.toDataURL('image/png'); link.click(); }
+  else if (img) { link.href = img.src; link.click(); }
+}
+</script>
+
+<!-- Main Logic -->
+<script src="./qrzip_engine.js"></script>
+<script src="./portal.js" type="module"></script>
+</body>
+</html>

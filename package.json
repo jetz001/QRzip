@@ -1,7 +1,15 @@
 {
-  "dependencies": {
-    "acorn": "^8.17.0",
-    "jsdom": "^29.1.1",
-    "pako": "^3.0.1"
+  "name": "qrzip",
+  "version": "1.0.0",
+  "description": "QRzip Cloudflare Pages Project",
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy public",
+    "db:create": "wrangler d1 create qrzip-db",
+    "db:init:local": "wrangler d1 execute qrzip-db --local --file=./schema.sql",
+    "db:init:remote": "wrangler d1 execute qrzip-db --remote --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
   }
 }

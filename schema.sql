@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS members (
   name TEXT NOT NULL,
   email TEXT NOT NULL,
   plan TEXT NOT NULL DEFAULT 'member',
+  banned INTEGER DEFAULT 0,
   created_at TEXT NOT NULL
 );
 

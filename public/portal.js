@@ -225,20 +225,20 @@ async function initHomePage() {
     setText("#scanStatus", "กำลังสแกนจากรูป...");
     try {
       const { payload, preview } = await extractQrFromImage(file);
-      $("#scanPreview").src = preview;
-      $("#scanPreview").style.display = "block";
-      $("#scanPayloadInput").value = payload;
+      if ($("#scanPreview")) $("#scanPreview").src = preview;
+      if ($("#scanPreview")) $("#scanPreview").style.display = "block";
+      if ($("#decode-input")) $("#decode-input").value = payload;
       console.log("[QR Scanner] Decoded raw payload:", payload);
       
       const decoded = await decodeQrzipPayload(payload, apiGet);
       setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
-      setText("#scanDecoded", decoded.text);
+      setText("#decode-result", decoded.text);
       setText("#scanFreeHint", payload.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
       $("#result-scan")?.classList.remove("hidden");
     } catch (error) {
       console.error(error);
       setText("#scanStatus", "สแกนไม่สำเร็จ: " + error.message);
-      setText("#scanDecoded", "");
+      setText("#decode-result", "");
       setText("#scanFreeHint", "");
     }
   }
@@ -262,13 +262,25 @@ async function initHomePage() {
   };
 
   $("#mainCreateBtn")?.addEventListener("click", async () => {
-    const text = $("#homeText").value;
+    const text = $("#qr-input").value;
     if (!text.trim()) {
-      setText("#freeStatus", "กรุณาใส่ข้อความก่อน");
+      alert("กรุณาใส่ข้อความก่อน");
       return;
     }
 
-    const mode = document.querySelector('input[name="createMode"]:checked').value;
+    // Hide placeholder, show spinner temporarily
+    const placeholder = $("#qr-placeholder");
+    const canvas = $("#qr-canvas");
+    if(placeholder) placeholder.style.display = 'none';
+    if(canvas) canvas.innerHTML = '';
+    const dlBtn = $("#download-btn");
+    if(dlBtn) dlBtn.classList.remove('visible');
+
+    const modeNode = document.querySelector('input[name="createMode"]:checked');
+    const mode = modeNode ? modeNode.value : 'offline';
+
+    const origBytes = utf8Bytes(text);
+    setText("#stat-original", origBytes.toLocaleString());
 
     if (mode === 'member') {
       const currentMember = loadMember();
@@ -276,8 +288,6 @@ async function initHomePage() {
         alert("กรุณาสมัครสมาชิกก่อนใช้งานโหมดนี้");
         return;
       }
-      setText("#freeStatus", "กำลังสร้าง QR สมาชิก...");
-      $("#result-create")?.classList.remove("hidden");
       try {
         const data = await apiPost("/api/store", {
           text,
@@ -286,34 +296,25 @@ async function initHomePage() {
           mode: "member"
         });
         const ref = `QZR|${data.id}`;
-        const ok = renderQr($("#freeQr"), ref);
-        setText("#freeStatus", ok
-          ? `สร้าง Member QR แล้ว | payload ${utf8Bytes(ref).toLocaleString()} bytes`
-          : "สร้าง ref ได้แล้ว แต่ QR แสดงผลไม่สำเร็จ");
-        setText("#modelName", "Cloud Storage (Ref ID)");
-        setText("#freePayload", ref);
-        
-        // Render Raw QR just for comparison
-        const rawOk = renderQr($("#rawQr"), text);
-        setText("#rawStatus", rawOk ? `ขนาดเดิม: ${utf8Bytes(text).toLocaleString()} bytes` : "ข้อความยาวเกินไปสำหรับ QR แบบปกติ!");
+        const ok = renderQr($("#qr-canvas"), ref);
+        const finalBytes = utf8Bytes(ref);
+        setText("#stat-compressed", finalBytes.toLocaleString());
+        const savedPercent = origBytes > finalBytes ? Math.round(((origBytes - finalBytes) / origBytes) * 100) : 0;
+        setText("#stat-saving", savedPercent + "%");
+        setText("#algo-name-badge", "Cloud Storage");
+        setText("#algo-name-text", "Cloud Storage (Ref ID)");
+        $("#algo-row").style.display = "flex";
+        if(dlBtn) dlBtn.classList.add('visible');
       } catch (err) {
         console.error(err);
-        setText("#freeStatus", "สร้าง QR สมาชิกไม่สำเร็จ");
+        alert("สร้าง QR สมาชิกไม่สำเร็จ");
       }
       return;
     }
     
     // Offline mode logic (Original)
-    const rawOk = renderQr($("#rawQr"), text);
-    if (rawOk) {
-      setText("#rawStatus", `ขนาดเดิม: ${utf8Bytes(text).toLocaleString()} bytes`);
-    } else {
-      setText("#rawStatus", "ข้อความยาวเกินไปสำหรับ QR แบบปกติ!");
-    }
-
     const stats = typeof analyzeText === 'function' ? analyzeText(text) : null;
     let payload = null;
-    let displayPayload = null;
     let finalBytes = 0;
     let savedBytes = 0;
     let modelName = "";
@@ -327,7 +328,6 @@ async function initHomePage() {
       if (rankedInfo && rankedInfo.ranked.length > 0) {
         const best = rankedInfo.ranked[0];
         payload = best.finalQrText;
-        displayPayload = best.finalPayload;
         finalBytes = best.finalPayloadBytes;
         savedBytes = utf8Bytes(text) - finalBytes;
         modelName = best.label;
@@ -336,26 +336,33 @@ async function initHomePage() {
     
     if (!payload) {
         payload = buildFreePayload(text);
-        displayPayload = payload;
         finalBytes = utf8Bytes(payload);
         savedBytes = utf8Bytes(text) - finalBytes;
         modelName = "Base64 (Fallback)";
     }
 
-    const ok = renderQr($("#freeQr"), payload, 220, true);
+    const ok = renderQr($("#qr-canvas"), payload, 180, true);
     if (ok) {
       const savedPercent = savedBytes > 0 ? Math.round((savedBytes / utf8Bytes(text)) * 100) : 0;
-      setText("#freeStatus", `บีบอัดเหลือ: ${finalBytes.toLocaleString()} bytes (ประหยัด ${savedPercent}%)`);
-      setText("#freePayload", displayPayload);
-      if ($("#modelName")) setText("#modelName", `โมเดล: ${modelName}`);
+      setText("#stat-compressed", finalBytes.toLocaleString());
+      setText("#stat-saving", savedPercent + "%");
+      setText("#algo-name-badge", modelName.split(' ')[0]);
+      setText("#algo-name-text", modelName);
+      $("#algo-row").style.display = "flex";
+      if(dlBtn) dlBtn.classList.add('visible');
+      
+      // Update meta
+      const meta = $("#qr-meta");
+      if(meta) {
+        meta.style.display = "block";
+        meta.innerHTML = `Algorithm: <strong>${modelName.split(' ')[0]}</strong> &nbsp;·&nbsp; Error correction <strong>M</strong>`;
+      }
     } else {
-      setText("#freeStatus", "ข้อความยาวเกินสำหรับ Free 1 QR | แนะนำให้ใช้โหมดสมาชิก");
-      setText("#freePayload", displayPayload);
-      if ($("#modelName")) setText("#modelName", `โมเดล: ${modelName}`);
+      alert("ข้อความยาวเกินสำหรับ Free 1 QR | แนะนำให้ใช้โหมดสมาชิก");
     }
   });
 
-  $("#resolveBtn")?.addEventListener("click", async () => {
+$("#resolveBtn")?.addEventListener("click", async () => {
     const rid = parseRef($("#resolveInput").value);
     if (!rid) {
       setText("#resolveStatus", "กรุณาวาง QZR|<id> หรือ <id>");
@@ -372,7 +379,18 @@ async function initHomePage() {
     }
   });
 
-  $("#scanQrFile")?.addEventListener("change", async (event) => {
+  
+  $("#manualDecodeBtn")?.addEventListener("click", async () => {
+    const payload = $("#decode-input")?.value?.trim() || "";
+    if (!payload) return;
+    try {
+      const decoded = await decodeQrzipPayload(payload, apiGet);
+      setText("#decode-result", decoded.text);
+    } catch(e) {
+      setText("#decode-result", "Error: " + e.message);
+    }
+  });
+$("#scanQrFile")?.addEventListener("change", async (event) => {
     await handleQrFile(event.target.files?.[0]);
   });
 
@@ -381,7 +399,7 @@ async function initHomePage() {
   });
 
   $("#copyDecodedBtn")?.addEventListener("click", () => {
-    const text = $("#scanDecoded")?.value;
+    const text = $("#decode-result")?.textContent;
     if (text) {
       navigator.clipboard.writeText(text).then(() => {
         const btn = $("#copyDecodedBtn");
@@ -413,12 +431,12 @@ async function initHomePage() {
         try {
           const decoded = await decodeQrzipPayload(decodedText, apiGet);
           setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
-          setText("#scanPayloadInput", decodedText);
-          setText("#scanDecoded", decoded.text);
+          setText("#decode-input", decodedText);
+          setText("#decode-result", decoded.text);
           setText("#scanFreeHint", decodedText.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
         } catch(e) {
           setText("#scanStatus", "สแกนไม่สำเร็จ: " + e.message);
-          setText("#scanPayloadInput", decodedText);
+          setText("#decode-input", decodedText);
         }
       };
       
@@ -506,7 +524,7 @@ async function initSignupPage() {
       });
       const data = await res.json();
       if (res.ok && data.token) {
-        localStorage.setItem("qrzip_admin_token", data.token);
+        localStorage.setItem("adminToken", data.token);
         $("#loginOverlay").style.display = "none";
         $("#adminDashboard").style.display = "flex";
         loadAdminMembers(data.token);
@@ -559,8 +577,8 @@ function renderMembersTable() {
     return `
       <tr>
         <td><code>${m.id}</code></td>
-        <td>${m.name}</td>
-        <td>${m.email}</td>
+        <td>${escapeHtml(m.name)}</td>
+        <td>${escapeHtml(m.email)}</td>
         <td>
           <span class="tag ${m.plan === 'admin' ? 'admin' : (m.plan === 'pro' ? 'admin' : '')}">${m.plan.toUpperCase()}</span>
           ${isBanned ? '<span class="tag banned" style="margin-left:4px;">BANNED</span>' : ''}
@@ -939,3 +957,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (page === "member") initMemberPage();
   if (page === "admin") initAdminPage();
 });
+\nfunction escapeHtml(unsafe) {
+    return (unsafe || "").toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
