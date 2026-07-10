@@ -347,7 +347,7 @@ async function initHomePage() {
       const selectorInfo = selectAutoCandidates(stats, text);
       const methods = selectorInfo.candidates;
       const results = methods.map((method) => evaluateMethod(method, text)).filter(Boolean);
-      const rankedInfo = rankResults(results, "bytes", 0.82);
+      const rankedInfo = rankResults(results, "scan", 0.82);
       if (rankedInfo && rankedInfo.ranked.length > 0) {
         const best = rankedInfo.ranked[0];
         payload = best.finalQrText;
