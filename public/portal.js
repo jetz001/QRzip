@@ -1,12 +1,10 @@
-import { decodeQrzipPayload } from './decode.js';
+import { decodeQrzipPayload } from "./decode.js";
 const $ = (selector) => document.querySelector(selector);
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
-
 function utf8Bytes(text) {
   return encoder.encode(text).length;
 }
-
 function bytesToBase64(bytes) {
   let binary = "";
   bytes.forEach((byte) => {
@@ -14,14 +12,13 @@ function bytesToBase64(bytes) {
   });
   return btoa(binary);
 }
-
 function toBase64Url(text) {
   const bytes = encoder.encode(text);
   return bytesToBase64(bytes).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
-
 function base64ToBytes(base64) {
-  if (!base64) return new Uint8Array();
+  if (!base64)
+    return new Uint8Array();
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
@@ -29,39 +26,34 @@ function base64ToBytes(base64) {
   }
   return bytes;
 }
-
 function base64UrlToBytes(base64url) {
   const padding = "=".repeat((4 - (base64url.length % 4 || 4)) % 4);
   const base64 = base64url.replaceAll("-", "+").replaceAll("_", "/") + padding;
   return base64ToBytes(base64);
 }
-
-
-
 function isAsciiOnly(text) {
   for (const char of text) {
-    if (char.charCodeAt(0) > 0x7f) return false;
+    if (char.charCodeAt(0) > 127)
+      return false;
   }
   return true;
 }
-
 function buildFreePayload(text) {
-  if (isAsciiOnly(text)) return `QZ1|T|${text}`;
+  if (isAsciiOnly(text))
+    return `QZ1|T|${text}`;
   return `QZ1|B|${toBase64Url(text)}`;
 }
-
-
-
 async function extractQrFromImage(file) {
-  if (typeof Html5Qrcode === "undefined") throw new Error("html5_qrcode_not_loaded");
-  if (!file || !file.type.startsWith("image/")) throw new Error("invalid_image_file");
+  if (typeof Html5Qrcode === "undefined")
+    throw new Error("html5_qrcode_not_loaded");
+  if (!file || !file.type.startsWith("image/"))
+    throw new Error("invalid_image_file");
   const reader = new FileReader();
   const imageDataUrl = await new Promise((resolve, reject) => {
     reader.onload = () => resolve(reader.result);
     reader.onerror = () => reject(new Error("read_failed"));
     reader.readAsDataURL(file);
   });
-
   try {
     const html5QrCode = new Html5Qrcode("qr-reader");
     const result = await html5QrCode.scanFile(file, true);
@@ -72,42 +64,33 @@ async function extractQrFromImage(file) {
     throw new Error("qr_not_found");
   }
 }
-
 function renderQr(container, payload, size = 220, isBinary = false) {
   container.innerHTML = "";
   if (typeof qrcode === "undefined") {
-    container.textContent = "ยังโหลด QR library ไม่สำเร็จ";
+    container.textContent = "\u0E22\u0E31\u0E07\u0E42\u0E2B\u0E25\u0E14 QR library \u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08";
     return false;
   }
   try {
-    // 0 = auto version, "M" = medium error correction
     const qr = qrcode(0, "M");
-    // qrcode-generator only takes lower 8 bits by default. 
-    // We MUST convert JS string to a UTF-8 byte string first for languages like Thai.
     const utf8Payload = isBinary ? payload : unescape(encodeURIComponent(payload));
     qr.addData(utf8Payload);
     qr.make();
-    
     const count = qr.getModuleCount();
     const margin = 4;
     const canvasModules = count + margin * 2;
-    
     const canvas = document.createElement("canvas");
     canvas.width = canvasModules;
     canvas.height = canvasModules;
-    // Scale canvas to the desired size using CSS
     canvas.style.width = `${size}px`;
     canvas.style.height = `${size}px`;
     canvas.style.imageRendering = "pixelated";
     canvas.style.display = "block";
     canvas.style.margin = "0 auto";
-    
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvasModules, canvasModules);
     ctx.fillStyle = "#000000";
-    
     for (let row = 0; row < count; row++) {
       for (let col = 0; col < count; col++) {
         if (qr.isDark(row, col)) {
@@ -115,39 +98,37 @@ function renderQr(container, payload, size = 220, isBinary = false) {
         }
       }
     }
-    
     container.appendChild(canvas);
     return true;
   } catch (err) {
     console.error("QR Generation error:", err);
-    container.textContent = "ขนาดยาวเกินขีดจำกัดของ QR (เกิน V40)";
+    container.textContent = "\u0E02\u0E19\u0E32\u0E14\u0E22\u0E32\u0E27\u0E40\u0E01\u0E34\u0E19\u0E02\u0E35\u0E14\u0E08\u0E33\u0E01\u0E31\u0E14\u0E02\u0E2D\u0E07 QR (\u0E40\u0E01\u0E34\u0E19 V40)";
     return false;
   }
 }
-
 async function apiGet(url) {
   const headers = {};
   const token = localStorage.getItem("adminToken");
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
+  if (token)
+    headers["Authorization"] = `Bearer ${token}`;
   const response = await fetch(url, { headers });
   let data = null;
   try {
     data = await response.json();
   } catch (err) {
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok)
+      throw new Error(`HTTP ${response.status}`);
   }
   if (!response.ok) {
-    throw new Error(data?.error || "api_error");
+    throw new Error((data == null ? void 0 : data.error) || "api_error");
   }
   return data;
 }
-
 async function apiPost(url, body) {
   const headers = { "Content-Type": "application/json" };
   const token = localStorage.getItem("adminToken");
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
+  if (token)
+    headers["Authorization"] = `Bearer ${token}`;
   const response = await fetch(url, {
     method: "POST",
     headers,
@@ -157,18 +138,17 @@ async function apiPost(url, body) {
   try {
     data = await response.json();
   } catch (err) {
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok)
+      throw new Error(`HTTP ${response.status}`);
   }
   if (!response.ok) {
-    throw new Error(data?.error || "api_error");
+    throw new Error((data == null ? void 0 : data.error) || "api_error");
   }
   return data;
 }
-
 function saveMember(member) {
   localStorage.setItem("qrzip_member", JSON.stringify(member));
 }
-
 function loadMember() {
   try {
     return JSON.parse(localStorage.getItem("qrzip_member") || "null");
@@ -176,116 +156,118 @@ function loadMember() {
     return null;
   }
 }
-
 function memberBadgeText(member) {
-  if (!member) return "ยังไม่ได้เป็นสมาชิก";
+  if (!member)
+    return "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E40\u0E1B\u0E47\u0E19\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01";
   return `${member.name} (${member.plan})`;
 }
-
 function parseRef(value) {
   const text = (value || "").trim();
-  if (!text) return "";
+  if (!text)
+    return "";
   return text.startsWith("QZR|") ? text.slice(4) : text;
 }
-
 function setText(selector, value) {
   const node = $(selector);
   if (node) {
-    if (node.tagName === 'TEXTAREA' || node.tagName === 'INPUT') {
+    if (node.tagName === "TEXTAREA" || node.tagName === "INPUT") {
       node.value = value;
     } else {
       node.textContent = value;
     }
   }
 }
-
 async function initHomePage() {
+  var _a, _b, _c, _d, _e, _f, _g, _h;
   const member = loadMember();
   setText("#memberState", memberBadgeText(member));
-  
   const regBtnNav = $("#memberRegisterBtnNav");
   const regBtnBar = $("#memberRegisterBtnBar");
-  
   if (member) {
-    if (regBtnNav) regBtnNav.style.display = 'none';
-    if (regBtnBar) regBtnBar.style.display = 'none';
+    if (regBtnNav)
+      regBtnNav.style.display = "none";
+    if (regBtnBar)
+      regBtnBar.style.display = "none";
   } else {
     if (regBtnNav) {
-      regBtnNav.style.display = 'inline-block';
-      regBtnNav.addEventListener('click', () => { document.getElementById('userRegisterModal').style.display = 'flex'; });
+      regBtnNav.style.display = "inline-block";
+      regBtnNav.addEventListener("click", () => {
+        document.getElementById("userRegisterModal").style.display = "flex";
+      });
     }
     if (regBtnBar) {
-      regBtnBar.style.display = 'inline-block';
-      regBtnBar.addEventListener('click', () => { document.getElementById('userRegisterModal').style.display = 'flex'; });
+      regBtnBar.style.display = "inline-block";
+      regBtnBar.addEventListener("click", () => {
+        document.getElementById("userRegisterModal").style.display = "flex";
+      });
     }
   }
-
   async function handleQrFile(file) {
-    if (!file) return;
-    setText("#scanStatus", "กำลังสแกนจากรูป...");
+    var _a2;
+    if (!file)
+      return;
+    setText("#scanStatus", "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E2A\u0E41\u0E01\u0E19\u0E08\u0E32\u0E01\u0E23\u0E39\u0E1B...");
     try {
       const { payload, preview } = await extractQrFromImage(file);
-      if ($("#scanPreview")) $("#scanPreview").src = preview;
-      if ($("#scanPreview")) $("#scanPreview").style.display = "block";
-      if ($("#decode-input")) $("#decode-input").value = payload;
+      if ($("#scanPreview"))
+        $("#scanPreview").src = preview;
+      if ($("#scanPreview"))
+        $("#scanPreview").style.display = "block";
+      if ($("#decode-input"))
+        $("#decode-input").value = payload;
       console.log("[QR Scanner] Decoded raw payload:", payload);
-      
       const decoded = await decodeQrzipPayload(payload, apiGet);
-      setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
+      setText("#scanStatus", `\u0E2A\u0E41\u0E01\u0E19\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 | ${decoded.meta}`);
       setText("#decode-result", decoded.text);
-      setText("#scanFreeHint", payload.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
-      $("#result-scan")?.classList.remove("hidden");
+      setText("#scanFreeHint", payload.startsWith("QZ1|") ? "\u0E43\u0E0A\u0E48, \u0E2D\u0E31\u0E19\u0E19\u0E35\u0E49\u0E40\u0E1B\u0E47\u0E19 QR \u0E41\u0E1A\u0E1A\u0E1F\u0E23\u0E35 (self-contained)" : "\u0E2D\u0E31\u0E19\u0E19\u0E35\u0E49\u0E40\u0E1B\u0E47\u0E19 QR \u0E41\u0E1A\u0E1A\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01/ref");
+      (_a2 = $("#result-scan")) == null ? void 0 : _a2.classList.remove("hidden");
     } catch (error) {
       console.error(error);
-      setText("#scanStatus", "สแกนไม่สำเร็จ: " + error.message);
+      setText("#scanStatus", "\u0E2A\u0E41\u0E01\u0E19\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08: " + error.message);
       setText("#decode-result", "");
       setText("#scanFreeHint", "");
     }
   }
-
   window.toggleCreateMode = function(mode) {
-    if (mode === 'offline') {
-      $("#labelModeOffline").classList.add('active');
-      $("#labelModeMember").classList.remove('active');
+    var _a2;
+    if (mode === "offline") {
+      $("#labelModeOffline").classList.add("active");
+      $("#labelModeMember").classList.remove("active");
     } else {
       const currentMember = loadMember();
       if (!currentMember) {
-        // Revert to offline if not logged in
         document.querySelector('input[name="createMode"][value="offline"]').checked = true;
-        alert("กรุณาสมัครสมาชิกก่อนใช้งานโหมดนี้");
+        alert("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E01\u0E48\u0E2D\u0E19\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E42\u0E2B\u0E21\u0E14\u0E19\u0E35\u0E49");
         return;
       }
-      $("#labelModeOffline").classList.remove('active');
-      $("#labelModeMember").classList.add('active');
+      $("#labelModeOffline").classList.remove("active");
+      $("#labelModeMember").classList.add("active");
     }
-    $("#result-create")?.classList.add("hidden");
+    (_a2 = $("#result-create")) == null ? void 0 : _a2.classList.add("hidden");
   };
-
-  $("#mainCreateBtn")?.addEventListener("click", async () => {
+  (_a = $("#mainCreateBtn")) == null ? void 0 : _a.addEventListener("click", async () => {
     const text = $("#qr-input").value;
     if (!text.trim()) {
-      alert("กรุณาใส่ข้อความก่อน");
+      alert("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E43\u0E2A\u0E48\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E01\u0E48\u0E2D\u0E19");
       return;
     }
-
-    // Hide placeholder, show spinner temporarily
     const placeholder = $("#qr-placeholder");
     const canvas = $("#qr-canvas");
-    if(placeholder) placeholder.style.display = 'none';
-    if(canvas) canvas.innerHTML = '';
+    if (placeholder)
+      placeholder.style.display = "none";
+    if (canvas)
+      canvas.innerHTML = "";
     const dlBtn = $("#download-btn");
-    if(dlBtn) dlBtn.classList.remove('visible');
-
+    if (dlBtn)
+      dlBtn.classList.remove("visible");
     const modeNode = document.querySelector('input[name="createMode"]:checked');
-    const mode = modeNode ? modeNode.value : 'offline';
-
+    const mode = modeNode ? modeNode.value : "offline";
     const origBytes = utf8Bytes(text);
     setText("#stat-original", origBytes.toLocaleString());
-
-    if (mode === 'member') {
+    if (mode === "member") {
       const currentMember = loadMember();
       if (!currentMember) {
-        alert("กรุณาสมัครสมาชิกก่อนใช้งานโหมดนี้");
+        alert("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E01\u0E48\u0E2D\u0E19\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E42\u0E2B\u0E21\u0E14\u0E19\u0E35\u0E49");
         return;
       }
       try {
@@ -296,35 +278,32 @@ async function initHomePage() {
           mode: "member"
         });
         const ref = `QZR|${data.id}`;
-        const ok = renderQr($("#qr-canvas"), ref);
-        const finalBytes = utf8Bytes(ref);
-        setText("#stat-compressed", finalBytes.toLocaleString());
-        const savedPercent = origBytes > finalBytes ? Math.round(((origBytes - finalBytes) / origBytes) * 100) : 0;
+        const ok2 = renderQr($("#qr-canvas"), ref);
+        const finalBytes2 = utf8Bytes(ref);
+        setText("#stat-compressed", finalBytes2.toLocaleString());
+        const savedPercent = origBytes > finalBytes2 ? Math.round((origBytes - finalBytes2) / origBytes * 100) : 0;
         setText("#stat-saving", savedPercent + "%");
         setText("#algo-name-badge", "Cloud Storage");
         setText("#algo-name-text", "Cloud Storage (Ref ID)");
         $("#algo-row").style.display = "flex";
-        if(dlBtn) dlBtn.classList.add('visible');
+        if (dlBtn)
+          dlBtn.classList.add("visible");
       } catch (err) {
         console.error(err);
-        alert("สร้าง QR สมาชิกไม่สำเร็จ");
+        alert("\u0E2A\u0E23\u0E49\u0E32\u0E07 QR \u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
       }
       return;
     }
-    
-    // Offline mode logic (Original)
-    const stats = typeof analyzeText === 'function' ? analyzeText(text) : null;
+    const stats = typeof analyzeText === "function" ? analyzeText(text) : null;
     let payload = null;
     let finalBytes = 0;
     let savedBytes = 0;
     let modelName = "";
-
     if (stats) {
       const selectorInfo = selectAutoCandidates(stats, text);
       const methods = selectorInfo.candidates;
       const results = methods.map((method) => evaluateMethod(method, text)).filter(Boolean);
       const rankedInfo = rankResults(results, "scan", 0.82);
-      
       if (rankedInfo && rankedInfo.ranked.length > 0) {
         const best = rankedInfo.ranked[0];
         payload = best.finalQrText;
@@ -333,113 +312,106 @@ async function initHomePage() {
         modelName = best.label;
       }
     }
-    
     if (!payload) {
-        payload = buildFreePayload(text);
-        finalBytes = utf8Bytes(payload);
-        savedBytes = utf8Bytes(text) - finalBytes;
-        modelName = "Base64 (Fallback)";
+      payload = buildFreePayload(text);
+      finalBytes = utf8Bytes(payload);
+      savedBytes = utf8Bytes(text) - finalBytes;
+      modelName = "Base64 (Fallback)";
     }
-
     const ok = renderQr($("#qr-canvas"), payload, 180, true);
     if (ok) {
-      const savedPercent = savedBytes > 0 ? Math.round((savedBytes / utf8Bytes(text)) * 100) : 0;
+      const savedPercent = savedBytes > 0 ? Math.round(savedBytes / utf8Bytes(text) * 100) : 0;
       setText("#stat-compressed", finalBytes.toLocaleString());
       setText("#stat-saving", savedPercent + "%");
-      setText("#algo-name-badge", modelName.split(' ')[0]);
+      setText("#algo-name-badge", modelName.split(" ")[0]);
       setText("#algo-name-text", modelName);
       $("#algo-row").style.display = "flex";
-      if(dlBtn) dlBtn.classList.add('visible');
-      
-      // Update meta
+      if (dlBtn)
+        dlBtn.classList.add("visible");
       const meta = $("#qr-meta");
-      if(meta) {
+      if (meta) {
         meta.style.display = "block";
-        meta.innerHTML = `Algorithm: <strong>${modelName.split(' ')[0]}</strong> &nbsp;·&nbsp; Error correction <strong>M</strong>`;
+        meta.innerHTML = `Algorithm: <strong>${modelName.split(" ")[0]}</strong> &nbsp;\xB7&nbsp; Error correction <strong>M</strong>`;
       }
     } else {
-      alert("ข้อความยาวเกินสำหรับ Free 1 QR | แนะนำให้ใช้โหมดสมาชิก");
+      alert("\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E22\u0E32\u0E27\u0E40\u0E01\u0E34\u0E19\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A Free 1 QR | \u0E41\u0E19\u0E30\u0E19\u0E33\u0E43\u0E2B\u0E49\u0E43\u0E0A\u0E49\u0E42\u0E2B\u0E21\u0E14\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01");
     }
   });
-
-$("#resolveBtn")?.addEventListener("click", async () => {
+  (_b = $("#resolveBtn")) == null ? void 0 : _b.addEventListener("click", async () => {
     const rid = parseRef($("#resolveInput").value);
     if (!rid) {
-      setText("#resolveStatus", "กรุณาวาง QZR|<id> หรือ <id>");
+      setText("#resolveStatus", "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E27\u0E32\u0E07 QZR|<id> \u0E2B\u0E23\u0E37\u0E2D <id>");
       return;
     }
-    setText("#resolveStatus", "กำลังดึงข้อมูล...");
+    setText("#resolveStatus", "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E14\u0E36\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25...");
     try {
       const data = await apiGet(`/api/get/${encodeURIComponent(rid)}`);
-      setText("#resolveStatus", `ดึงข้อมูลสำเร็จ | mode ${data.mode || "unknown"}`);
+      setText("#resolveStatus", `\u0E14\u0E36\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 | mode ${data.mode || "unknown"}`);
       setText("#resolvedText", data.text || "");
     } catch {
-      setText("#resolveStatus", "ดึงข้อมูลไม่สำเร็จ");
+      setText("#resolveStatus", "\u0E14\u0E36\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
       setText("#resolvedText", "");
     }
   });
-
-  
-  $("#manualDecodeBtn")?.addEventListener("click", async () => {
-    const payload = $("#decode-input")?.value?.trim() || "";
-    if (!payload) return;
+  (_c = $("#manualDecodeBtn")) == null ? void 0 : _c.addEventListener("click", async () => {
+    var _a2, _b2;
+    const payload = ((_b2 = (_a2 = $("#decode-input")) == null ? void 0 : _a2.value) == null ? void 0 : _b2.trim()) || "";
+    if (!payload)
+      return;
     try {
       const decoded = await decodeQrzipPayload(payload, apiGet);
       setText("#decode-result", decoded.text);
-    } catch(e) {
+    } catch (e) {
       setText("#decode-result", "Error: " + e.message);
     }
   });
-$("#scanQrFile")?.addEventListener("change", async (event) => {
-    await handleQrFile(event.target.files?.[0]);
+  (_d = $("#scanQrFile")) == null ? void 0 : _d.addEventListener("change", async (event) => {
+    var _a2;
+    await handleQrFile((_a2 = event.target.files) == null ? void 0 : _a2[0]);
   });
-
-  $("#scanPickBtn")?.addEventListener("click", () => {
-    $("#scanQrFile")?.click();
+  (_e = $("#scanPickBtn")) == null ? void 0 : _e.addEventListener("click", () => {
+    var _a2;
+    (_a2 = $("#scanQrFile")) == null ? void 0 : _a2.click();
   });
-
-  $("#copyDecodedBtn")?.addEventListener("click", () => {
-    const text = $("#decode-result")?.textContent;
+  (_f = $("#copyDecodedBtn")) == null ? void 0 : _f.addEventListener("click", () => {
+    var _a2;
+    const text = (_a2 = $("#decode-result")) == null ? void 0 : _a2.textContent;
     if (text) {
       navigator.clipboard.writeText(text).then(() => {
         const btn = $("#copyDecodedBtn");
         const originalText = btn.textContent;
-        btn.textContent = "✅ Copied!";
-        setTimeout(() => btn.textContent = originalText, 2000);
-      }).catch(err => console.error("Copy failed", err));
+        btn.textContent = "\u2705 Copied!";
+        setTimeout(() => btn.textContent = originalText, 2e3);
+      }).catch((err) => console.error("Copy failed", err));
     }
   });
-
   let html5QrCodeScannerInstance = null;
-
-  $("#cameraScanBtn")?.addEventListener("click", async () => {
+  (_g = $("#cameraScanBtn")) == null ? void 0 : _g.addEventListener("click", async () => {
+    var _a2;
     try {
       const container = $("#cameraContainer");
-      if (!container) return;
+      if (!container)
+        return;
       container.style.display = "block";
-      setText("#scanStatus", "กำลังมองหา QR Code จากกล้อง...");
-      $("#result-scan")?.classList.remove("hidden");
-      
+      setText("#scanStatus", "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E21\u0E2D\u0E07\u0E2B\u0E32 QR Code \u0E08\u0E32\u0E01\u0E01\u0E25\u0E49\u0E2D\u0E07...");
+      (_a2 = $("#result-scan")) == null ? void 0 : _a2.classList.remove("hidden");
       if (!html5QrCodeScannerInstance) {
         html5QrCodeScannerInstance = new Html5Qrcode("camera-reader");
       }
-      
       const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-      
       const onScanSuccess = async (decodedText) => {
         stopCamera();
         try {
           const decoded = await decodeQrzipPayload(decodedText, apiGet);
-          setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
+          setText("#scanStatus", `\u0E2A\u0E41\u0E01\u0E19\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 | ${decoded.meta}`);
           setText("#decode-input", decodedText);
           setText("#decode-result", decoded.text);
-          setText("#scanFreeHint", decodedText.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
-        } catch(e) {
-          setText("#scanStatus", "สแกนไม่สำเร็จ: " + e.message);
+          setText("#scanFreeHint", decodedText.startsWith("QZ1|") ? "\u0E43\u0E0A\u0E48, \u0E2D\u0E31\u0E19\u0E19\u0E35\u0E49\u0E40\u0E1B\u0E47\u0E19 QR \u0E41\u0E1A\u0E1A\u0E1F\u0E23\u0E35 (self-contained)" : "\u0E2D\u0E31\u0E19\u0E19\u0E35\u0E49\u0E40\u0E1B\u0E47\u0E19 QR \u0E41\u0E1A\u0E1A\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01/ref");
+        } catch (e) {
+          setText("#scanStatus", "\u0E2A\u0E41\u0E01\u0E19\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08: " + e.message);
           setText("#decode-input", decodedText);
         }
       };
-      
       try {
         const devices = await Html5Qrcode.getCameras();
         if (devices && devices.length > 0) {
@@ -450,72 +422,73 @@ $("#scanQrFile")?.addEventListener("change", async (event) => {
               break;
             }
           }
-          await html5QrCodeScannerInstance.start(cameraId, config, onScanSuccess, () => {});
+          await html5QrCodeScannerInstance.start(cameraId, config, onScanSuccess, () => {
+          });
         } else {
-          await html5QrCodeScannerInstance.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+          await html5QrCodeScannerInstance.start({ facingMode: "environment" }, config, onScanSuccess, () => {
+          });
         }
       } catch (startErr) {
-        // Fallback to environment if getCameras failed (e.g. some browsers don't support getCameras without permissions first)
-        await html5QrCodeScannerInstance.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+        await html5QrCodeScannerInstance.start({ facingMode: "environment" }, config, onScanSuccess, () => {
+        });
       }
     } catch (err) {
       const msg = err.message || err || "Unknown error";
-      alert("ไม่สามารถเข้าถึงกล้องได้: " + msg + "\n(หากเปิดผ่าน LINE/Facebook ให้ลองเปิดด้วย Safari/Chrome แทนครับ)");
+      alert("\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E02\u0E49\u0E32\u0E16\u0E36\u0E07\u0E01\u0E25\u0E49\u0E2D\u0E07\u0E44\u0E14\u0E49: " + msg + "\n(\u0E2B\u0E32\u0E01\u0E40\u0E1B\u0E34\u0E14\u0E1C\u0E48\u0E32\u0E19 LINE/Facebook \u0E43\u0E2B\u0E49\u0E25\u0E2D\u0E07\u0E40\u0E1B\u0E34\u0E14\u0E14\u0E49\u0E27\u0E22 Safari/Chrome \u0E41\u0E17\u0E19\u0E04\u0E23\u0E31\u0E1A)");
       $("#cameraContainer").style.display = "none";
     }
   });
-
-  $("#cameraStopBtn")?.addEventListener("click", () => {
+  (_h = $("#cameraStopBtn")) == null ? void 0 : _h.addEventListener("click", () => {
     stopCamera();
   });
-
   function stopCamera() {
     if (html5QrCodeScannerInstance && html5QrCodeScannerInstance.isScanning) {
       html5QrCodeScannerInstance.stop().then(() => {
         $("#cameraContainer").style.display = "none";
         setText("#scanStatus", "");
-      }).catch(err => console.error(err));
+      }).catch((err) => console.error(err));
     } else {
       const container = $("#cameraContainer");
-      if (container) container.style.display = "none";
+      if (container)
+        container.style.display = "none";
       setText("#scanStatus", "");
     }
   }
-
   const dropzone = $("#scanDropzone");
   ["dragenter", "dragover"].forEach((eventName) => {
-    dropzone?.addEventListener(eventName, (event) => {
+    dropzone == null ? void 0 : dropzone.addEventListener(eventName, (event) => {
       event.preventDefault();
       dropzone.classList.add("active");
     });
   });
   ["dragleave", "dragend"].forEach((eventName) => {
-    dropzone?.addEventListener(eventName, () => {
+    dropzone == null ? void 0 : dropzone.addEventListener(eventName, () => {
       dropzone.classList.remove("active");
     });
   });
-  dropzone?.addEventListener("drop", async (event) => {
+  dropzone == null ? void 0 : dropzone.addEventListener("drop", async (event) => {
+    var _a2, _b2;
     event.preventDefault();
     dropzone.classList.remove("active");
-    const file = event.dataTransfer?.files?.[0];
+    const file = (_b2 = (_a2 = event.dataTransfer) == null ? void 0 : _a2.files) == null ? void 0 : _b2[0];
     await handleQrFile(file);
   });
 }
-
 async function initSignupPage() {
+  var _a, _b;
   const adminToken = localStorage.getItem("qrzip_admin_token");
   if (adminToken) {
-    if ($("#loginOverlay")) $("#loginOverlay").style.display = "none";
-    if ($("#adminDashboard")) $("#adminDashboard").style.display = "flex";
+    if ($("#loginOverlay"))
+      $("#loginOverlay").style.display = "none";
+    if ($("#adminDashboard"))
+      $("#adminDashboard").style.display = "flex";
     loadAdminMembers(adminToken);
   }
-
-  $("#adminLoginForm")?.addEventListener("submit", async (e) => {
+  (_a = $("#adminLoginForm")) == null ? void 0 : _a.addEventListener("submit", async (e) => {
     e.preventDefault();
     const user = $("#adminUser").value.trim();
     const pass = $("#adminPass").value.trim();
-    setText("#loginStatus", "กำลังตรวจสอบ...");
-    
+    setText("#loginStatus", "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A...");
     try {
       const res = await fetch("/api/admin/login", {
         method: "POST",
@@ -529,22 +502,19 @@ async function initSignupPage() {
         $("#adminDashboard").style.display = "flex";
         loadAdminMembers(data.token);
       } else {
-        setText("#loginStatus", data.error || "รหัสผ่านไม่ถูกต้อง");
+        setText("#loginStatus", data.error || "\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07");
       }
-    } catch (e) {
-      setText("#loginStatus", "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
+    } catch (e2) {
+      setText("#loginStatus", "\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E40\u0E0B\u0E34\u0E23\u0E4C\u0E1F\u0E40\u0E27\u0E2D\u0E23\u0E4C\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49");
     }
   });
-
-  $("#adminLogout")?.addEventListener("click", (e) => {
+  (_b = $("#adminLogout")) == null ? void 0 : _b.addEventListener("click", (e) => {
     e.preventDefault();
     localStorage.removeItem("qrzip_admin_token");
     location.reload();
   });
 }
-
 let currentMembers = [];
-
 async function loadAdminMembers(token) {
   try {
     const res = await fetch("/api/admin/members", {
@@ -562,17 +532,15 @@ async function loadAdminMembers(token) {
     console.error("Failed to load members", e);
   }
 }
-
 function renderMembersTable() {
   const tbody = $("#managementTable");
-  if (!tbody) return;
-  
+  if (!tbody)
+    return;
   if (currentMembers.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">ไม่มีข้อมูลสมาชิก</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01</td></tr>`;
     return;
   }
-  
-  tbody.innerHTML = currentMembers.map(m => {
+  tbody.innerHTML = currentMembers.map((m) => {
     const isBanned = m.banned;
     return `
       <tr>
@@ -580,45 +548,41 @@ function renderMembersTable() {
         <td>${escapeHtml(m.name)}</td>
         <td>${escapeHtml(m.email)}</td>
         <td>
-          <span class="tag ${m.plan === 'admin' ? 'admin' : (m.plan === 'pro' ? 'admin' : '')}">${m.plan.toUpperCase()}</span>
-          ${isBanned ? '<span class="tag banned" style="margin-left:4px;">BANNED</span>' : ''}
+          <span class="tag ${m.plan === "admin" ? "admin" : m.plan === "pro" ? "admin" : ""}">${m.plan.toUpperCase()}</span>
+          ${isBanned ? '<span class="tag banned" style="margin-left:4px;">BANNED</span>' : ""}
         </td>
-        <td style="color:var(--muted); font-size:13px;">${new Date(m.createdAt).toLocaleString('th-TH')}</td>
+        <td style="color:var(--muted); font-size:13px;">${new Date(m.createdAt).toLocaleString("th-TH")}</td>
         <td>
-          <button class="action-btn edit" onclick="openEditModal('${m.id}')">แก้ไข</button>
-          <button class="action-btn ban" onclick="toggleBan('${m.id}', ${!isBanned})">${isBanned ? 'ปลดแบน' : 'แบน'}</button>
-          <button class="action-btn delete" onclick="deleteMember('${m.id}')">ลบ</button>
+          <button class="action-btn edit" onclick="openEditModal('${m.id}')">\u0E41\u0E01\u0E49\u0E44\u0E02</button>
+          <button class="action-btn ban" onclick="toggleBan('${m.id}', ${!isBanned})">${isBanned ? "\u0E1B\u0E25\u0E14\u0E41\u0E1A\u0E19" : "\u0E41\u0E1A\u0E19"}</button>
+          <button class="action-btn delete" onclick="deleteMember('${m.id}')">\u0E25\u0E1A</button>
         </td>
       </tr>
     `;
   }).join("");
 }
-
 function openEditModal(id) {
-  const m = currentMembers.find(x => x.id === id);
-  if (!m) return;
+  const m = currentMembers.find((x) => x.id === id);
+  if (!m)
+    return;
   $("#editId").value = m.id;
   $("#editName").value = m.name;
   $("#editEmail").value = m.email;
   $("#editPlan").value = m.plan;
   $("#editModal").style.display = "flex";
 }
-
 window.closeEditModal = function() {
   $("#editModal").style.display = "none";
-}
-
+};
 window.openEditModal = openEditModal;
-
 window.saveEditMember = async function() {
   const token = localStorage.getItem("qrzip_admin_token");
-  if (!token) return;
-  
+  if (!token)
+    return;
   const id = $("#editId").value;
   const name = $("#editName").value;
   const email = $("#editEmail").value;
   const plan = $("#editPlan").value;
-  
   try {
     const res = await fetch(`/api/admin/members/${id}`, {
       method: "PUT",
@@ -629,69 +593,64 @@ window.saveEditMember = async function() {
       closeEditModal();
       loadAdminMembers(token);
     } else {
-      alert("แก้ไขไม่สำเร็จ");
+      alert("\u0E41\u0E01\u0E49\u0E44\u0E02\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
     }
   } catch (e) {
-    alert("เชื่อมต่อไม่สำเร็จ");
+    alert("\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
   }
-}
-
+};
 window.toggleBan = async function(id, banState) {
-  if (!confirm(`คุณต้องการ ${banState ? 'แบน' : 'ปลดแบน'} สมาชิกนี้ใช่หรือไม่?`)) return;
-  
+  if (!confirm(`\u0E04\u0E38\u0E13\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23 ${banState ? "\u0E41\u0E1A\u0E19" : "\u0E1B\u0E25\u0E14\u0E41\u0E1A\u0E19"} \u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E19\u0E35\u0E49\u0E43\u0E0A\u0E48\u0E2B\u0E23\u0E37\u0E2D\u0E44\u0E21\u0E48?`))
+    return;
   const token = localStorage.getItem("qrzip_admin_token");
-  if (!token) return;
-  
+  if (!token)
+    return;
   try {
     const res = await fetch(`/api/admin/members/${id}/ban`, {
       method: "POST",
       headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ banned: banState })
     });
-    if (res.ok) loadAdminMembers(token);
+    if (res.ok)
+      loadAdminMembers(token);
   } catch (e) {
     console.error(e);
   }
-}
-
+};
 window.deleteMember = async function(id) {
-  if (!confirm("คุณต้องการลบสมาชิกนี้ถาวรใช่หรือไม่? (ไม่สามารถกู้คืนได้)")) return;
-  
+  if (!confirm("\u0E04\u0E38\u0E13\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E25\u0E1A\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E19\u0E35\u0E49\u0E16\u0E32\u0E27\u0E23\u0E43\u0E0A\u0E48\u0E2B\u0E23\u0E37\u0E2D\u0E44\u0E21\u0E48? (\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E01\u0E39\u0E49\u0E04\u0E37\u0E19\u0E44\u0E14\u0E49)"))
+    return;
   const token = localStorage.getItem("qrzip_admin_token");
-  if (!token) return;
-  
+  if (!token)
+    return;
   try {
     const res = await fetch(`/api/admin/members/${id}`, {
       method: "DELETE",
       headers: { "Authorization": `Bearer ${token}` }
     });
-    if (res.ok) loadAdminMembers(token);
+    if (res.ok)
+      loadAdminMembers(token);
   } catch (e) {
     console.error(e);
   }
-}
-
+};
 window.openAddModal = function() {
   $("#addName").value = "";
   $("#addEmail").value = "";
   $("#addPlan").value = "member";
   $("#addModal").style.display = "flex";
-}
-
+};
 window.closeAddModal = function() {
   $("#addModal").style.display = "none";
-}
-
+};
 window.saveAddMember = async function() {
   const name = $("#addName").value.trim();
   const email = $("#addEmail").value.trim();
   const plan = $("#addPlan").value;
-  
   if (!name || !email) {
-    alert("กรุณากรอกชื่อและอีเมล");
+    alert("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E01\u0E23\u0E2D\u0E01\u0E0A\u0E37\u0E48\u0E2D\u0E41\u0E25\u0E30\u0E2D\u0E35\u0E40\u0E21\u0E25");
     return;
   }
-  
   const token = localStorage.getItem("qrzip_admin_token");
   try {
     const res = await fetch("/api/member/signup", {
@@ -701,20 +660,20 @@ window.saveAddMember = async function() {
     });
     if (res.ok) {
       closeAddModal();
-      if (token) loadAdminMembers(token);
+      if (token)
+        loadAdminMembers(token);
     } else {
-      alert("เพิ่มสมาชิกไม่สำเร็จ");
+      alert("\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
     }
   } catch (e) {
-    alert("เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ");
+    alert("\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E40\u0E0B\u0E34\u0E23\u0E4C\u0E1F\u0E40\u0E27\u0E2D\u0E23\u0E4C\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
   }
-}
-
+};
 window.submitUserRegistration = async function() {
   const name = $("#userRegName").value.trim();
   const email = $("#userRegEmail").value.trim();
   if (!name || !email) {
-    alert("กรุณากรอกชื่อและอีเมล");
+    alert("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E01\u0E23\u0E2D\u0E01\u0E0A\u0E37\u0E48\u0E2D\u0E41\u0E25\u0E30\u0E2D\u0E35\u0E40\u0E21\u0E25");
     return;
   }
   try {
@@ -726,51 +685,49 @@ window.submitUserRegistration = async function() {
     if (res.ok) {
       const data = await res.json();
       saveMember(data.member);
-      document.getElementById('userRegisterModal').style.display = 'none';
-      alert("สมัครสมาชิกสำเร็จ เครื่องนี้ถูกผูกเรียบร้อยแล้ว!");
+      document.getElementById("userRegisterModal").style.display = "none";
+      alert("\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E19\u0E35\u0E49\u0E16\u0E39\u0E01\u0E1C\u0E39\u0E01\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27!");
       window.location.reload();
     } else {
-      alert("สมัครสมาชิกไม่สำเร็จ");
+      alert("\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
     }
   } catch (e) {
-    alert("เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ");
+    alert("\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E40\u0E0B\u0E34\u0E23\u0E4C\u0E1F\u0E40\u0E27\u0E2D\u0E23\u0E4C\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
   }
-}
-
+};
 async function initMemberPage() {
+  var _a, _b, _c;
   const member = loadMember();
   if (!member) {
-    setText("#memberModeStatus", "ยังไม่มีสมาชิกในเครื่องนี้ กรุณาสมัครก่อน");
-    if ($("#memberRegisterBtn")) $("#memberRegisterBtn").style.display = "inline-flex";
-    if ($("#memberProfileBtn2")) $("#memberProfileBtn2").style.display = "none";
+    setText("#memberModeStatus", "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E43\u0E19\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E19\u0E35\u0E49 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E01\u0E48\u0E2D\u0E19");
+    if ($("#memberRegisterBtn"))
+      $("#memberRegisterBtn").style.display = "inline-flex";
+    if ($("#memberProfileBtn2"))
+      $("#memberProfileBtn2").style.display = "none";
   } else {
-    if ($("#memberRegisterBtn")) $("#memberRegisterBtn").style.display = "none";
-    if ($("#memberProfileBtn2")) $("#memberProfileBtn2").style.display = "inline-flex";
-    // If #memberCard exists, set it
+    if ($("#memberRegisterBtn"))
+      $("#memberRegisterBtn").style.display = "none";
+    if ($("#memberProfileBtn2"))
+      $("#memberProfileBtn2").style.display = "inline-flex";
     if ($("#memberCard")) {
       setText("#memberCard", `${member.name} | ${member.email} | ${member.id}`);
     }
   }
-
-  $("#memberRegisterBtn")?.addEventListener("click", () => {
-    document.getElementById('userRegisterModal').style.display = 'flex';
+  (_a = $("#memberRegisterBtn")) == null ? void 0 : _a.addEventListener("click", () => {
+    document.getElementById("userRegisterModal").style.display = "flex";
   });
-
-  $("#memberCreateBtn")?.addEventListener("click", async () => {
+  (_b = $("#memberCreateBtn")) == null ? void 0 : _b.addEventListener("click", async () => {
     const text = $("#memberText").value;
     const currentMember = loadMember();
-    
     if (!currentMember) {
-      alert("กรุณาสมัครสมาชิกก่อนใช้งานโหมดนี้");
+      alert("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E01\u0E48\u0E2D\u0E19\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E42\u0E2B\u0E21\u0E14\u0E19\u0E35\u0E49");
       return;
     }
-    
     if (!text.trim()) {
-      setText("#memberModeStatus", "กรุณาใส่ข้อความก่อน");
+      setText("#memberModeStatus", "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E43\u0E2A\u0E48\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E01\u0E48\u0E2D\u0E19");
       return;
     }
-
-    setText("#memberModeStatus", "กำลังสร้าง QR สมาชิก...");
+    setText("#memberModeStatus", "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E2A\u0E23\u0E49\u0E32\u0E07 QR \u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01...");
     try {
       const data = await apiPost("/api/store", {
         text,
@@ -780,52 +737,50 @@ async function initMemberPage() {
       });
       const ref = `QZR|${data.id}`;
       const ok = renderQr($("#memberQr"), ref);
-      setText("#memberModeStatus", ok
-        ? `สร้าง Member QR 1 ใบแล้ว | payload ${utf8Bytes(ref).toLocaleString()} bytes`
-        : "สร้าง ref ได้แล้ว แต่ QR แสดงผลไม่สำเร็จ");
+      setText("#memberModeStatus", ok ? `\u0E2A\u0E23\u0E49\u0E32\u0E07 Member QR 1 \u0E43\u0E1A\u0E41\u0E25\u0E49\u0E27 | payload ${utf8Bytes(ref).toLocaleString()} bytes` : "\u0E2A\u0E23\u0E49\u0E32\u0E07 ref \u0E44\u0E14\u0E49\u0E41\u0E25\u0E49\u0E27 \u0E41\u0E15\u0E48 QR \u0E41\u0E2A\u0E14\u0E07\u0E1C\u0E25\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
       setText("#memberPayload", ref);
       $("#memberResolveInput").value = ref;
     } catch {
-      setText("#memberModeStatus", "สร้าง QR สมาชิกไม่สำเร็จ");
+      setText("#memberModeStatus", "\u0E2A\u0E23\u0E49\u0E32\u0E07 QR \u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
     }
   });
-
-  $("#memberResolveBtn")?.addEventListener("click", async () => {
+  (_c = $("#memberResolveBtn")) == null ? void 0 : _c.addEventListener("click", async () => {
     const rid = parseRef($("#memberResolveInput").value);
     if (!rid) {
-      setText("#memberResolveStatus", "กรุณาวาง ref");
+      setText("#memberResolveStatus", "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E27\u0E32\u0E07 ref");
       return;
     }
-    setText("#memberResolveStatus", "กำลังดึงข้อมูล...");
+    setText("#memberResolveStatus", "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E14\u0E36\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25...");
     try {
       const data = await apiGet(`/api/get/${encodeURIComponent(rid)}`);
-      setText("#memberResolveStatus", "ดึงข้อมูลสำเร็จ");
+      setText("#memberResolveStatus", "\u0E14\u0E36\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
       setText("#memberResolvedText", data.text || "");
     } catch {
-      setText("#memberResolveStatus", "ดึงข้อมูลไม่สำเร็จ");
+      setText("#memberResolveStatus", "\u0E14\u0E36\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08");
     }
   });
 }
-
 function renderRows(tableSelector, rows, mapper) {
   const tbody = $(tableSelector);
-  if (!tbody) return;
+  if (!tbody)
+    return;
   tbody.innerHTML = rows.map(mapper).join("");
 }
-
 async function initAdminPage() {
+  var _a, _b;
   const token = localStorage.getItem("adminToken");
   if (token) {
-    if ($("#loginOverlay")) $("#loginOverlay").style.display = "none";
-    if ($("#adminDashboard")) $("#adminDashboard").style.display = "flex";
+    if ($("#loginOverlay"))
+      $("#loginOverlay").style.display = "none";
+    if ($("#adminDashboard"))
+      $("#adminDashboard").style.display = "flex";
     loadAdminData();
   }
-
-  $("#adminLoginForm")?.addEventListener("submit", async (e) => {
+  (_a = $("#adminLoginForm")) == null ? void 0 : _a.addEventListener("submit", async (e) => {
     e.preventDefault();
     const username = $("#adminUser").value;
     const password = $("#adminPass").value;
-    setText("#loginStatus", "กำลังตรวจสอบ...");
+    setText("#loginStatus", "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A...");
     try {
       const res = await apiPost("/api/admin/login", { username, password });
       localStorage.setItem("adminToken", res.token);
@@ -833,17 +788,15 @@ async function initAdminPage() {
       $("#adminDashboard").style.display = "flex";
       loadAdminData();
     } catch {
-      setText("#loginStatus", "รหัสผ่านไม่ถูกต้อง");
+      setText("#loginStatus", "\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07");
     }
   });
-
-  $("#adminLogout")?.addEventListener("click", (e) => {
+  (_b = $("#adminLogout")) == null ? void 0 : _b.addEventListener("click", (e) => {
     e.preventDefault();
     localStorage.removeItem("adminToken");
     window.location.reload();
   });
 }
-
 async function loadAdminData() {
   try {
     const [overview, refs, members] = await Promise.all([
@@ -851,12 +804,10 @@ async function loadAdminData() {
       apiGet("/api/admin/refs"),
       apiGet("/api/admin/members")
     ]);
-
     setText("#metricRefs", String(overview.totals.refs));
     setText("#metricMembers", String(overview.totals.members));
     setText("#metricFree", String(overview.totals.freeRefs));
     setText("#metricMemberRefs", String(overview.totals.memberRefs));
-
     renderRows("#refsTable", refs.items || [], (item) => `
       <tr>
         <td><code>${item.id}</code></td>
@@ -866,7 +817,6 @@ async function loadAdminData() {
         <td>${item.createdAt || "-"}</td>
       </tr>
     `);
-
     renderRows("#membersTable", members.items || [], (item) => `
       <tr>
         <td><code>${item.id}</code></td>
@@ -877,42 +827,35 @@ async function loadAdminData() {
       </tr>
     `);
   } catch {
-    setText("#adminStatus", "โหลดข้อมูลแอดมินไม่สำเร็จ (Token อาจหมดอายุ)");
+    setText("#adminStatus", "\u0E42\u0E2B\u0E25\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E41\u0E2D\u0E14\u0E21\u0E34\u0E19\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 (Token \u0E2D\u0E32\u0E08\u0E2B\u0E21\u0E14\u0E2D\u0E32\u0E22\u0E38)");
     localStorage.removeItem("adminToken");
     setTimeout(() => window.location.reload(), 1500);
   }
 }
-
 async function openMemberProfile() {
   const member = loadMember();
   if (!member) {
-    alert("คุณยังไม่ได้เป็นสมาชิก หรือไม่ได้เข้าสู่ระบบ");
+    alert("\u0E04\u0E38\u0E13\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E40\u0E1B\u0E47\u0E19\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01 \u0E2B\u0E23\u0E37\u0E2D\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A");
     return;
   }
-  
   $("#profileMemberId").textContent = member.id || "-";
   $("#profileMemberName").textContent = member.name || "-";
   $("#profileMemberPlan").textContent = member.plan || "member";
-  
   $("#memberProfileModal").style.display = "flex";
-  
   try {
     const data = await apiGet(`/api/member/history?memberId=${encodeURIComponent(member.id)}`);
     const items = data.items || [];
-    
     if (items.length === 0) {
-      $("#profileHistoryTable").innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">ไม่มีประวัติการสร้าง QR Code</td></tr>`;
+      $("#profileHistoryTable").innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">\u0E44\u0E21\u0E48\u0E21\u0E35\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E01\u0E32\u0E23\u0E2A\u0E23\u0E49\u0E32\u0E07 QR Code</td></tr>`;
       return;
     }
-    
-    // Make showHistoryQr global so it can be called from inline onclick
     window.showHistoryQr = function(payload) {
       const container = document.getElementById("qrPreviewContainer");
-      if (!container) return;
+      if (!container)
+        return;
       document.getElementById("qrPreviewModal").style.display = "flex";
       renderQr(container, payload, 220, false);
     };
-    
     renderRows("#profileHistoryTable", items, (item) => `
       <tr>
         <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2);">${item.created_at || item.createdAt || "-"}</td>
@@ -928,15 +871,13 @@ async function openMemberProfile() {
     `);
   } catch (err) {
     console.error("Error fetching history:", err);
-    $("#profileHistoryTable").innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">โหลดข้อมูลไม่สำเร็จ</td></tr>`;
+    $("#profileHistoryTable").innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">\u0E42\u0E2B\u0E25\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08</td></tr>`;
   }
 }
-
 function initProfileModal() {
   const member = loadMember();
   const btn1 = $("#memberProfileBtn");
   const btn2 = $("#memberProfileBtn2");
-  
   if (member) {
     if (btn1) {
       btn1.style.display = "inline-block";
@@ -948,20 +889,18 @@ function initProfileModal() {
     }
   }
 }
-
 document.addEventListener("DOMContentLoaded", () => {
   initProfileModal();
   const page = document.body.dataset.page;
-  if (page === "home") initHomePage();
-  if (page === "signup") initSignupPage();
-  if (page === "member") initMemberPage();
-  if (page === "admin") initAdminPage();
+  if (page === "home")
+    initHomePage();
+  if (page === "signup")
+    initSignupPage();
+  if (page === "member")
+    initMemberPage();
+  if (page === "admin")
+    initAdminPage();
 });
 function escapeHtml(unsafe) {
-    return (unsafe || "").toString()
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
+  return (unsafe || "").toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
