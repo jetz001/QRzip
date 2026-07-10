@@ -957,7 +957,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (page === "member") initMemberPage();
   if (page === "admin") initAdminPage();
 });
-\nfunction escapeHtml(unsafe) {
+function escapeHtml(unsafe) {
     return (unsafe || "").toString()
          .replace(/&/g, "&amp;")
          .replace(/</g, "&lt;")
