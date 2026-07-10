@@ -31,18 +31,18 @@
         <h3 style="text-align: left; margin-top:0;">4-State QR Code (จำลอง)</h3>
         <p style="font-size: 12px; color: var(--muted); margin-bottom:16px; text-align: left;">ใช้ 4 สี แทนข้อมูล 2 บิตต่อจุด (00, 01, 10, 11)</p>
 
-        <div class="qr-cards">
-          <div class="glass-card" style="padding: 1.5rem; flex: 1;">
-            <h3 style="margin-top: 0;">4SQR แบบไม่ย่อ</h3>
-            <p id="statsRaw4Sqr" class="qr-meta" style="text-align: left;">กดสร้าง QR เพื่อดูสถิติ</p>
+        <div class="qr-compare">
+          <div class="qr-card">
+            <h3>4SQR แบบไม่ย่อ</h3>
+            <div id="statsRaw4Sqr" class="small" style="text-align: left;">กดสร้าง QR เพื่อดูสถิติ</div>
             <div class="qr-box">
               <canvas id="rawQrCanvas" class="four-sqr-canvas"></canvas>
             </div>
           </div>
           
-          <div class="glass-card" style="padding: 1.5rem; flex: 1;">
-            <h3 style="margin-top: 0;">4SQR แบบบีบอัด</h3>
-            <p id="statsComp4Sqr" class="qr-meta" style="text-align: left;">กดสร้าง QR เพื่อดูสถิติ</p>
+          <div class="qr-card">
+            <h3>4SQR แบบบีบอัด</h3>
+            <div id="statsComp4Sqr" class="small" style="text-align: left;">กดสร้าง QR เพื่อดูสถิติ</div>
             <div class="qr-box">
               <canvas id="compQrCanvas" class="four-sqr-canvas"></canvas>
             </div>
