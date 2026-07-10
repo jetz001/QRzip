@@ -1,4 +1,4 @@
-import { decodeQrzipPayload } from "./decode.js?v=f457752";
+import { decodeQrzipPayload } from "./decode.js?v=ui1101a78";
 const $ = (selector) => document.querySelector(selector);
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -245,10 +245,63 @@ async function initHomePage() {
     }
     (_a2 = $("#result-create")) == null ? void 0 : _a2.classList.add("hidden");
   };
+
+  (_b = $("#clearInputBtn")) == null ? void 0 : _b.addEventListener("click", () => {
+    const input = $("#qr-input");
+    if (input)
+      input.value = "";
+    setText("#stat-original", "\u2014");
+    setText("#stat-compressed", "\u2014");
+    setText("#stat-saving", "\u2014");
+    setText("#algo-name-badge", "\u2014");
+    setText("#algo-name-text", "\u2014");
+    const algoRow = $("#algo-row");
+    if (algoRow)
+      algoRow.style.display = "none";
+    const meta = $("#qr-meta");
+    if (meta)
+      meta.style.display = "none";
+    const placeholder = $("#qr-placeholder");
+    if (placeholder)
+      placeholder.style.display = "flex";
+    const canvas = $("#qr-canvas");
+    if (canvas)
+      canvas.innerHTML = "";
+    const dlBtn = $("#download-btn");
+    if (dlBtn)
+      dlBtn.classList.remove("visible");
+  });
+
+  (_c = $("#copyInputBtn")) == null ? void 0 : _c.addEventListener("click", async () => {
+    var _a2;
+    const text = ((_a2 = $("#qr-input")) == null ? void 0 : _a2.value) || "";
+    if (!text.trim()) {
+      alert("\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E43\u0E2B\u0E49\u0E01\u0E4A\u0E2D\u0E1B\u0E1B\u0E35\u0E49");
+      return;
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        throw new Error("clipboard_not_available");
+      }
+      const btn = $("#copyInputBtn");
+      if (btn) {
+        const old = btn.textContent;
+        btn.textContent = "\u0E04\u0E31\u0E14\u0E25\u0E2D\u0E01\u0E41\u0E25\u0E49\u0E27";
+        setTimeout(() => {
+          btn.textContent = old;
+        }, 1200);
+      }
+    } catch (e) {
+      prompt("\u0E04\u0E31\u0E14\u0E25\u0E2D\u0E01\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E19\u0E35\u0E49:", text);
+    }
+  });
   (_a = $("#mainCreateBtn")) == null ? void 0 : _a.addEventListener("click", async () => {
     const text = $("#qr-input").value;
     if (!text.trim()) {
       alert("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E43\u0E2A\u0E48\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E01\u0E48\u0E2D\u0E19");
+      return;
       return;
     }
     const placeholder = $("#qr-placeholder");

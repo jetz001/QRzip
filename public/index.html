@@ -129,6 +129,8 @@
     }
     textarea#qr-input:focus, textarea#decode-input:focus { border-color: var(--accent1); background: white; box-shadow: 0 0 0 4px rgba(79,70,229,.1); }
     textarea#qr-input::placeholder, textarea#decode-input::placeholder { color: var(--muted); }
+    .input-actions { display:flex; gap: 12px; margin-top: 10px; }
+    .input-actions .btn-secondary { flex: 1; padding: 10px 14px; font-size: .85rem; }
 
     /* stats row */
     .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
@@ -367,6 +369,10 @@
           </div>
 
           <textarea id="qr-input" placeholder="Type or paste text here... (Thai &amp; English supported)"></textarea>
+          <div class="input-actions">
+            <button id="clearInputBtn" class="btn-secondary" type="button">ล้างข้อความ</button>
+            <button id="copyInputBtn" class="btn-secondary" type="button">ก๊อบปี้ข้อความ</button>
+          </div>
 
           <div class="stat-row">
             <div class="stat-box"><div class="val" id="stat-original">—</div><div class="lbl">Original (B)</div></div>
@@ -634,7 +640,7 @@ function downloadQR() {
 </script>
 
 <!-- Main Logic -->
-<script src="./qrzip_engine.js?v=f457752"></script>
-<script src="./portal.js?v=f457752" type="module"></script>
+<script src="./qrzip_engine.js?v=ui1101a78"></script>
+<script src="./portal.js?v=ui1101a78" type="module"></script>
 </body>
 </html>
