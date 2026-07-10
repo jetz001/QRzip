@@ -1,4 +1,4 @@
-import { decodeQrzipPayload } from "./decode.js";
+import { decodeQrzipPayload } from "./decode.js?v=f457752";
 const $ = (selector) => document.querySelector(selector);
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
