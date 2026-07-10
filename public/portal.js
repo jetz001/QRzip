@@ -272,29 +272,20 @@ async function initHomePage() {
       dlBtn.classList.remove("visible");
   });
 
-  (_c = $("#copyInputBtn")) == null ? void 0 : _c.addEventListener("click", async () => {
-    var _a2;
-    const text = ((_a2 = $("#qr-input")) == null ? void 0 : _a2.value) || "";
-    if (!text.trim()) {
-      alert("\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E43\u0E2B\u0E49\u0E01\u0E4A\u0E2D\u0E1B\u0E1B\u0E35\u0E49");
-      return;
-    }
+  (_c = $("#pasteInputBtn")) == null ? void 0 : _c.addEventListener("click", async () => {
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        const input = $("#qr-input");
+        if (input) {
+          input.value = text;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
       } else {
-        throw new Error("clipboard_not_available");
-      }
-      const btn = $("#copyInputBtn");
-      if (btn) {
-        const old = btn.textContent;
-        btn.textContent = "\u0E04\u0E31\u0E14\u0E25\u0E2D\u0E01\u0E41\u0E25\u0E49\u0E27";
-        setTimeout(() => {
-          btn.textContent = old;
-        }, 1200);
+        alert("เบราว์เซอร์ไม่รองรับการวางข้อมูลอัตโนมัติ กรุณากด Ctrl+V หรือ Command+V แทน");
       }
     } catch (e) {
-      prompt("\u0E04\u0E31\u0E14\u0E25\u0E2D\u0E01\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E19\u0E35\u0E49:", text);
+      alert("ไม่สามารถเข้าถึงคลิปบอร์ดได้ กรุณาอนุญาตให้เบราว์เซอร์เข้าถึงคลิปบอร์ด");
     }
   });
   (_a = $("#mainCreateBtn")) == null ? void 0 : _a.addEventListener("click", async () => {
