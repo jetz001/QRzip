@@ -202,6 +202,21 @@ async function initHomePage() {
       });
     }
   }
+
+  const qrSlider = $("#qr-slider");
+  const qrCanvasTop = $("#qr-canvas");
+  const qrSliderLine = $("#qr-slider-line");
+  const qrSliderHandle = $("#qr-slider-handle");
+
+  if (qrSlider && qrCanvasTop && qrSliderLine && qrSliderHandle) {
+    qrSlider.addEventListener("input", (e) => {
+      const val = e.target.value;
+      qrCanvasTop.style.clipPath = `polygon(${val}% 0, 100% 0, 100% 100%, ${val}% 100%)`;
+      qrSliderLine.style.left = `${val}%`;
+      qrSliderHandle.style.left = `${val}%`;
+    });
+  }
+
   async function handleQrFile(file) {
     var _a2;
     if (!file)
@@ -267,6 +282,15 @@ async function initHomePage() {
     const canvas = $("#qr-canvas");
     if (canvas)
       canvas.innerHTML = "";
+    const canvasRaw = $("#qr-canvas-raw");
+    if (canvasRaw)
+      canvasRaw.innerHTML = "";
+    const toggleWrap = $("#qr-toggle-wrap");
+    if (toggleWrap)
+      toggleWrap.style.display = "none";
+    const sliderGroup = $("#qr-slider-group");
+    if (sliderGroup)
+      sliderGroup.style.display = "none";
     const dlBtn = $("#download-btn");
     if (dlBtn)
       dlBtn.classList.remove("visible");
@@ -297,10 +321,26 @@ async function initHomePage() {
     }
     const placeholder = $("#qr-placeholder");
     const canvas = $("#qr-canvas");
+    const canvasRaw = $("#qr-canvas-raw");
+    const toggleWrap = $("#qr-toggle-wrap");
     if (placeholder)
       placeholder.style.display = "none";
     if (canvas)
       canvas.innerHTML = "";
+    if (canvasRaw)
+      canvasRaw.innerHTML = "";
+    if (toggleWrap) {
+      toggleWrap.style.display = "block";
+    }
+    const sliderGroup = $("#qr-slider-group");
+    if (sliderGroup) {
+      sliderGroup.style.display = "block";
+      const qrSlider = $("#qr-slider");
+      if (qrSlider) {
+        qrSlider.value = 50;
+        qrSlider.dispatchEvent(new Event("input"));
+      }
+    }
     const dlBtn = $("#download-btn");
     if (dlBtn)
       dlBtn.classList.remove("visible");
@@ -323,6 +363,7 @@ async function initHomePage() {
         });
         const ref = `QZR|${data.id}`;
         const ok2 = renderQr($("#qr-canvas"), ref);
+        renderQr($("#qr-canvas-raw"), text, 180, false);
         const finalBytes2 = utf8Bytes(ref);
         setText("#stat-compressed", finalBytes2.toLocaleString());
         const savedPercent = origBytes > finalBytes2 ? Math.round((origBytes - finalBytes2) / origBytes * 100) : 0;
@@ -363,6 +404,7 @@ async function initHomePage() {
       modelName = "Base64 (Fallback)";
     }
     const ok = renderQr($("#qr-canvas"), payload, 180, true);
+    renderQr($("#qr-canvas-raw"), text, 180, false);
     if (ok) {
       const savedPercent = savedBytes > 0 ? Math.round(savedBytes / utf8Bytes(text) * 100) : 0;
       setText("#stat-compressed", finalBytes.toLocaleString());

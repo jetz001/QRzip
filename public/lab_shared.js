@@ -645,79 +645,85 @@
       const rawCarrier = buildQrCarrierForRaw(inputText.value, encodingMode);
       const compressedPayloadText = comparisonResult.finalPayload || buildCompressedQrPayload(comparisonResult);
       const compressedQrText = comparisonResult.finalQrText || compressedPayloadText;
-      const rawPayload = rawCarrier.qrText;
+      const rawPayload = inputText.value;
       const compressedPayload = compressedQrText;
-      const rawBytes = rawCarrier.bytesLen;
+      const rawBytes = utf8Bytes(inputText.value);
       const compressedBytes = comparisonResult.finalPayloadBytes || utf8Bytes(compressedPayload);
       const savedBytes = rawBytes - compressedBytes;
 
       const rawRender = tryRenderQr(rawQrBox, rawPayload);
       const compressedRender = tryRenderQr(compressedQrBox, compressedPayload);
 
+      let rawDimStr = "";
+      try { let sq = qrcode(0, 'M'); sq.addData(rawPayload, encodingMode === 'text45' ? 'Alphanumeric' : (encodingMode === 'byte' ? 'Byte' : '')); sq.make(); const d = sq.getModuleCount(); rawDimStr = ` | จุด ${d*d} จุด (${d}x${d})`; } catch(e) {}
+
+      let compDimStr = "";
+      try { let sq = qrcode(0, 'M'); sq.addData(compressedPayload, encodingMode === 'text45' ? 'Alphanumeric' : (encodingMode === 'byte' ? 'Byte' : '')); sq.make(); const d = sq.getModuleCount(); compDimStr = ` | จุด ${d*d} จุด (${d}x${d})`; } catch(e) {}
+
       rawQrMeta.textContent = rawRender.ok
-        ? `payload ${rawBytes.toLocaleString()} bytes | raw${encodingMode === "byte" ? " | byte-mode" : ""}${rawRender.mode === "chunked" ? ` | ${rawRender.chunkCount} QR` : ""}`
+        ? `payload ${rawBytes.toLocaleString()} bytes | raw${encodingMode === "byte" ? " | byte-mode" : ""}${rawRender.mode === "chunked" ? ` | ${rawRender.chunkCount} QR` : ""}${rawDimStr}`
         : `payload ${rawBytes.toLocaleString()} bytes | เกินความจุ QR`;
       compressedQrMeta.textContent = compressedRender.ok
-        ? `payload ${compressedBytes.toLocaleString()} bytes | ${comparisonResult.label}${encodingMode === "byte" ? " | byte-mode" : ""}${compressedRender.mode === "chunked" ? ` | ${compressedRender.chunkCount} QR` : ""}`
+        ? `payload ${compressedBytes.toLocaleString()} bytes | ${comparisonResult.label}${encodingMode === "byte" ? " | byte-mode" : ""}${compressedRender.mode === "chunked" ? ` | ${compressedRender.chunkCount} QR` : ""}${compDimStr}`
         : `payload ${compressedBytes.toLocaleString()} bytes | เกินความจุ QR`;
       if (encodingMode === "byte") {
         const rawBytesB64Url = bytesToBase64Url(binaryStringToBytes(rawPayload));
         const compressedBytesB64Url = bytesToBase64Url(binaryStringToBytes(compressedPayload));
         if(qrPayloadView) qrPayloadView.textContent = [
-          "[สรุปชั้นข้อมูล / byte-mode]",
+          "[Layer Summary / byte-mode]",
           "",
-          "[engine payload / raw]",
+          "[Engine Payload (Raw)]",
           previewTextBlock(inputText.value, 240),
           "",
-          "[final QR payload / raw / แบบที่คนอ่านง่าย]",
+          "[Final QR Payload (Raw)]",
           rawCarrier.displayText,
           "",
-          `[decoder input / raw / bytes ที่ถูกใส่ใน QR จริง (${rawBytes.toLocaleString()} bytes)]`,
+          `[Decoder Input (Raw)] (${rawBytes.toLocaleString()} bytes)`,
           rawBytesB64Url,
           "",
-          `[engine payload / compressed / ${comparisonResult.label}]`,
+          `[Engine Payload (Compressed: ${comparisonResult.label})]`,
           summarizeEnginePayload(comparisonResult),
           "",
-          "[final QR payload / compressed / แบบที่ระบบห่อก่อนเข้า QR]",
+          "[Final QR Payload (Compressed)]",
           compressedPayloadText,
           "",
-          `[decoder input / compressed / bytes ที่ถูกใส่ใน QR จริง (${compressedBytes.toLocaleString()} bytes)]`,
+          `[Decoder Input (Compressed)] (${compressedBytes.toLocaleString()} bytes)`,
           compressedBytesB64Url
         ].join("\n");
         if(qrDecodeFlowView) qrDecodeFlowView.textContent = [
-          "[decoder flow / byte-mode]",
-          "1) scanner อ่าน QR ออกมาเป็นสตริงไบต์",
-          "2) decoder แปลงสตริงไบต์กลับเป็น bytes",
-          "3) อ่าน header เช่น QZ1D / QZ1L / QZ1F / QZ1T",
-          "4) ถ้าเป็น QZ1D ให้เอา bytes หลัง header ไป inflateRaw()",
-          "5) ได้ข้อความต้นฉบับกลับมา",
+          "[Decoder Flow / byte-mode]",
+          "1) Scanner reads QR to byte string",
+          "2) Decoder converts to bytes",
+          "3) Read header (QZ1D, QZ1L, QZ1F, QZ1T)",
+          "4) If QZ1D, apply inflateRaw()",
+          "5) Return original text",
           "",
-          `[หมายเหตุ] สิ่งที่ decoder ต้องรับจริงคือ decoder input ด้านบน ไม่ใช่ engine payload JSON`
+          `[Note] Decoder input must match above, not the JSON payload.`
         ].join("\n");
       } else {
         if(qrPayloadView) qrPayloadView.textContent = [
-          "[สรุปชั้นข้อมูล / text-mode]",
+          "[Layer Summary / text-mode]",
           "",
-          "[engine payload / raw]",
+          "[Engine Payload (Raw)]",
           previewTextBlock(inputText.value, 240),
           "",
-          "[final QR payload / raw / ตัวนี้ถูกใส่ใน QR ตรง ๆ]",
+          "[Final QR Payload (Raw)]",
           rawPayload,
           "",
-          `[engine payload / compressed / ${comparisonResult.label}]`,
+          `[Engine Payload (Compressed: ${comparisonResult.label})]`,
           summarizeEnginePayload(comparisonResult),
           "",
-          "[final QR payload / compressed / decoder รับตัวนี้ตรง ๆ]",
+          "[Final QR Payload (Compressed)]",
           compressedPayload
         ].join("\n");
         if(qrDecodeFlowView) qrDecodeFlowView.textContent = [
-          "[decoder flow / text-mode]",
-          "1) scanner อ่าน QR ออกมาเป็นข้อความ เช่น QZ1|D|...",
-          "2) decoder ดู prefix ว่าเป็น QZ1|T| / QZ1|B| / QZ1|D| / QZ1|L| / QZ1|F|",
-          "3) ถ้าเป็น QZ1|D| ให้เอาส่วนหลัง prefix ไป base64url decode",
-          "4) จากนั้น inflateRaw() เพื่อคืนข้อความต้นฉบับ",
+          "[Decoder Flow / text-mode]",
+          "1) Scanner reads text (e.g., QZ1|D|...)",
+          "2) Check prefix (QZ1|T|, QZ1|B|, QZ1|D|, QZ1|L|, QZ1|F|)",
+          "3) If QZ1|D|, base64url decode suffix",
+          "4) Apply inflateRaw() to recover text",
           "",
-          "[หมายเหตุ] decoder ไม่ควรรับ object ภายในอย่าง { data, originalBytes } โดยตรง"
+          "[Note] Do not pass internal objects like { data } to decoder directly."
         ].join("\n");
       }
       const compareText = savedBytes >= 0

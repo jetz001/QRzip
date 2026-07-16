@@ -3,127 +3,333 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lab 4SQR (Color QR)</title>
+  <title>Lab 4SQR - Premium Edition</title>
   <link rel="stylesheet" href="lab_shared.css?v=ui1101a81">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    canvas.four-sqr-canvas { image-rendering: pixelated; margin: 0 auto; display: block; border: 8px solid #fff; box-sizing: content-box; }
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --brand-gradient: linear-gradient(135deg, #10b981, #0ea5e9);
+      --accent: #10b981;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+      background-color: var(--bg-dark);
+      background-image: radial-gradient(circle at top right, rgba(16, 185, 129, 0.1), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(14, 165, 233, 0.1), transparent 40%);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    .header {
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      background: var(--brand-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    @media(min-width: 992px) {
+      .main-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .custom-textarea {
+      width: 100%;
+      height: 150px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+      outline: none;
+      resize: vertical;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    .custom-textarea:focus {
+      border-color: var(--accent);
+    }
+    .primary-btn {
+      background: var(--brand-gradient);
+      border: none;
+      padding: 14px 24px;
+      color: white;
+      font-weight: 600;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 24px;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .primary-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+    .primary-btn:active { transform: translateY(0); }
+    
+    .qr-canvas-container {
+      background: #fff;
+      padding: 16px;
+      border-radius: 12px;
+      display: inline-block;
+      margin-top: 16px;
+    }
+    canvas.four-sqr-canvas {
+      image-rendering: pixelated;
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <div class="container" id="appContainer">
-    <section class="hero">
-      <h1>🗜️ แลบวิจัย 4-State QR (Color QR)</h1>
-      <p>ข้อความจะถูกบีบอัดก่อน แล้วนำไปจำลองสถิติเทียบกับ QR Code แบบ 4 สี (ขาว, ดำ, แดง, น้ำเงิน) เพื่อเพิ่มความจุ 2 เท่า</p>
-    </section>
-  </div>
+  <!-- Hidden dependencies engine -->
+  <div id="hiddenEngine" style="display:none;"></div>
+
+  <header class="header">
+    <h1>🗜️ 4-State QR (Premium Lab)</h1>
+    <div style="color: var(--text-muted); font-size: 14px;">บีบอัดข้อความขั้นสูง (Text to 4SQR)</div>
+  </header>
+
+  <main class="main-grid">
+    <!-- Left Column: Encoder -->
+    <div class="glass-card">
+      <h2 style="color: var(--accent); margin-top: 0; margin-bottom: 20px;">1. ป้อนข้อความเพื่อบีบอัด</h2>
+      
+      <textarea id="uiInputText" class="custom-textarea" placeholder="พิมพ์หรือวางข้อความยาวๆ ที่นี่..."></textarea>
+
+      <button id="convertBtn" class="primary-btn">✨ วิเคราะห์และสร้าง 4SQR</button>
+      
+      <div id="statsBox" style="margin-top: 24px; padding: 16px; background: rgba(0,0,0,0.3); border-radius: 8px; display: none;">
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">ผลการบีบอัด (Compression Stats):</div>
+        <div id="statsText" style="font-family: monospace; color: #fff;"></div>
+      </div>
+    </div>
+
+    <!-- Right Column: Results & Decoder -->
+    <div style="display: flex; flex-direction: column; gap: 32px;">
+      
+      <!-- Simulation Card -->
+      <div class="glass-card">
+        <h2 style="color: #0ea5e9; margin-top: 0;">2. ผลลัพธ์ QR Code</h2>
+        <div id="qrStatusText" style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">กรุณาป้อนข้อความก่อน...</div>
+        
+        <div id="qrDisplayArea" style="display: none; text-align: center;">
+          <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+            <div>
+              <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px;">QR ปกติ (ไม่บีบอัด)</div>
+              <div class="qr-canvas-container">
+                <canvas id="rawQrCanvas" class="four-sqr-canvas"></canvas>
+              </div>
+              <div id="statsRaw4Sqr" style="margin-top: 12px; font-size: 13px; color: var(--text-muted);"></div>
+            </div>
+            <div>
+              <div style="color: #10b981; font-weight: 600; font-size: 13px; margin-bottom: 8px;">4SQR (บีบอัด)</div>
+              <div class="qr-canvas-container" style="box-shadow: 0 0 0 2px #10b981;">
+                <canvas id="compQrCanvas" class="four-sqr-canvas"></canvas>
+              </div>
+              <div id="statsComp4Sqr" style="margin-top: 12px; font-size: 14px; color: #10b981; font-weight: 500;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decode Card -->
+      <div class="glass-card" style="background: linear-gradient(145deg, rgba(30,41,59,0.7), rgba(15,23,42,0.9)); border-color: rgba(14,165,233,0.3);">
+        <h2 style="color: #fff; margin-top: 0;">🔍 ถอดรหัส (Decode Simulation)</h2>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">จำลองการสแกน 4SQR ด้านบนเพื่อดึงข้อความกลับมา</p>
+        <button id="decodeBtn" class="primary-btn" style="background: #0ea5e9; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);">
+          📸 จำลองการสแกน
+        </button>
+        <div id="decodeResult" style="margin-top: 24px; display: none;">
+          <div style="color: #10b981; font-weight: 600; margin-bottom: 12px;">✅ ข้อความที่ดึงกลับมาได้สำเร็จ:</div>
+          <div id="decodedText" style="background: rgba(0,0,0,0.4); padding: 16px; border-radius: 8px; border: 1px solid var(--card-border); color: #fff; white-space: pre-wrap; font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.6; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Engine Scripts -->
   <script src="qrzip_engine.js?v=ui1101a81"></script>
   <script src="lab_shared_ui.js?v=ui1101a81"></script>
   <script>
-    injectSharedUI("appContainer");
-
-    document.getElementById("qrExtraSlot").innerHTML = `
-      <div class="qr-card" style="margin-top:20px; width:100%">
-        <h3 style="text-align: left; margin-top:0;">4-State QR Code (จำลอง)</h3>
-        <p style="font-size: 12px; color: var(--muted); margin-bottom:16px; text-align: left;">ใช้ 4 สี แทนข้อมูล 2 บิตต่อจุด (00, 01, 10, 11)</p>
-
-        <div class="qr-compare">
-          <div class="qr-card">
-            <h3>4SQR แบบไม่ย่อ</h3>
-            <div id="statsRaw4Sqr" class="small" style="text-align: left;">กดสร้าง QR เพื่อดูสถิติ</div>
-            <div class="qr-box">
-              <canvas id="rawQrCanvas" class="four-sqr-canvas"></canvas>
-            </div>
-          </div>
-          
-          <div class="qr-card">
-            <h3>4SQR แบบบีบอัด</h3>
-            <div id="statsComp4Sqr" class="small" style="text-align: left;">กดสร้าง QR เพื่อดูสถิติ</div>
-            <div class="qr-box">
-              <canvas id="compQrCanvas" class="four-sqr-canvas"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <h3 style="margin-top: 24px; text-align: left;">ถอดรหัส (Decode)</h3>
-        <button id="decodeBtn" class="primary" style="background: var(--good); color: #fff;">ทดสอบถอดรหัส (จำลองการสแกน 4SQR)</button>
-        <div id="decodeResult" style="margin-top: 16px; background: #020617; padding: 12px; border-radius: 8px; border: 1px solid var(--line); white-space: pre-wrap; font-family: monospace; display:none; text-align: left;"></div>
-      </div>
-    `;
+    // Inject dependencies invisibly
+    injectSharedUI("hiddenEngine");
   </script>
   <script src="lab_shared.js?v=ui1101a81"></script>
+  
+  <!-- Custom Logic for Text-to-4SQR UI -->
   <script>
-    // Override generateQrCode
-    const oldGenerateQrCode = generateQrCode;
-    generateQrBtn.removeEventListener("click", oldGenerateQrCode);
-
-    generateQrCode = function() {
-      // call original to draw standard QRs
-      oldGenerateQrCode();
-
+    const originalGenerateQrCode = window.generateQrCode;
+    const hiddenGenerateBtn = document.getElementById("generateQrBtn");
+    const hiddenInput = document.getElementById("inputText");
+    
+    hiddenGenerateBtn.removeEventListener("click", originalGenerateQrCode);
+    
+    window.generateQrCode = function() {
       if (!lastBestResult) return;
+      window.is4SQRGenerated = true;
+      
       const comparisonResult = getComparisonCompressedResult();
       const compressedPayload = comparisonResult.finalPayload || buildCompressedQrPayload(comparisonResult);
-      const encodingMode = qrEncodingSelect?.value || "byte";
-      const rawCarrier = buildQrCarrierForRaw(inputText.value, encodingMode);
-      const rawPayload = rawCarrier.qrText;
+      const rawPayload = hiddenInput.value;
       
-      function simulate4SQR(payloadStr, elemId, canvasId) {
-         let stdQr = null, stdDim = 0;
-         try { stdQr = qrcode(0, 'M'); stdQr.addData(payloadStr, encodingMode === 'text45' ? 'Alphanumeric' : (encodingMode === 'byte' ? 'Byte' : '')); stdQr.make(); stdDim = stdQr.getModuleCount(); } catch(e) {}
-         if (!stdDim) return;
-         const standardModules = stdDim * stdDim;
-         
-         let halfPayload = payloadStr.substring(0, Math.max(1, Math.ceil(payloadStr.length / 2)));
-         let fourQr = null, fourDim = 0;
-         try { fourQr = qrcode(0, 'M'); fourQr.addData(halfPayload, encodingMode === 'text45' ? 'Alphanumeric' : (encodingMode === 'byte' ? 'Byte' : '')); fourQr.make(); fourDim = fourQr.getModuleCount(); } catch(e) {}
-         if (!fourDim) return;
-         const fourStateModules = fourDim * fourDim;
-         
-         document.getElementById(elemId).innerHTML = `ลดลง 50% | จุดเดิม ${standardModules} -> <strong style="color:var(--good)">${fourStateModules} จุด</strong>`;
-         
-         const canvas = document.getElementById(canvasId);
-         const ctx = canvas.getContext('2d');
-         canvas.width = fourDim;
-         canvas.height = fourDim;
-         canvas.style.width = '220px';
-         canvas.style.height = '220px';
-         
-         const colors = ['#ffffff', '#000000', '#ef4444', '#3b82f6'];
-         for(let y=0; y<fourDim; y++) {
-            for(let x=0; x<fourDim; x++) {
-               if ((x < 7 && y < 7) || (x > fourDim-8 && y < 7) || (x < 7 && y > fourDim-8)) {
-                  if (x===0||x===6||y===0||y===6 || (x>1&&x<5&&y>1&&y<5 && (x>fourDim-8?x<fourDim-2:true) && (y>fourDim-8?y<fourDim-2:true))) {
-                    ctx.fillStyle = '#000000';
-                  } else {
-                    ctx.fillStyle = '#ffffff';
-                  }
-               } else {
-                 ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
-               }
-               ctx.fillRect(x, y, 1, 1);
-            }
-         }
+      document.getElementById('qrStatusText').style.display = 'none';
+      document.getElementById('qrDisplayArea').style.display = 'block';
+      
+      // Update stats
+      document.getElementById('statsBox').style.display = 'block';
+      document.getElementById('statsText').innerHTML = 
+        `ขนาดดั้งเดิม: <b>${comparisonResult.originalBytes} bytes</b><br>` +
+        `ขนาดหลังบีบอัด: <b style="color:var(--accent)">${comparisonResult.finalPayloadBytes} bytes</b><br>` +
+        `ประหยัดพื้นที่: <b>${(100 - comparisonResult.ratio).toFixed(1)}%</b>`;
+      
+      function draw4SQR(payloadStr, elemId, canvasId) {
+        let stdQr = null, stdDim = 0;
+        try { 
+          stdQr = qrcode(0, 'M'); 
+          stdQr.addData(payloadStr, 'Byte'); 
+          stdQr.make(); 
+          stdDim = stdQr.getModuleCount(); 
+        } catch(e) {}
+        
+        if (!stdDim) return;
+        const standardModules = stdDim * stdDim;
+        
+        let halfPayload = payloadStr.substring(0, Math.max(1, Math.ceil(payloadStr.length / 2)));
+        let fourQr = null, fourDim = 0;
+        try { 
+          fourQr = qrcode(0, 'M'); 
+          fourQr.addData(halfPayload, 'Byte'); 
+          fourQr.make(); 
+          fourDim = fourQr.getModuleCount(); 
+        } catch(e) {}
+        
+        if (!fourDim) return;
+        const fourStateModules = fourDim * fourDim;
+        
+        document.getElementById(elemId).innerHTML = `ความจุ 4SQR: ${fourStateModules} จุด`;
+        
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        canvas.width = fourDim;
+        canvas.height = fourDim;
+        canvas.style.width = '180px';
+        canvas.style.height = '180px';
+        
+        const colors = ['#ffffff', '#000000', '#ef4444', '#3b82f6'];
+        for(let y=0; y<fourDim; y++) {
+          for(let x=0; x<fourDim; x++) {
+             let isFinder = false;
+             let lx = -1, ly = -1;
+             
+             if (x < 7 && y < 7) {
+                isFinder = true; lx = x; ly = y;
+             } else if (x >= fourDim - 7 && y < 7) {
+                isFinder = true; lx = x - (fourDim - 7); ly = y;
+             } else if (x < 7 && y >= fourDim - 7) {
+                isFinder = true; lx = x; ly = y - (fourDim - 7);
+             }
+             
+             if (isFinder) {
+                if (lx === 0 || lx === 6 || ly === 0 || ly === 6 || (lx >= 2 && lx <= 4 && ly >= 2 && ly <= 4)) {
+                   ctx.fillStyle = '#000000';
+                } else {
+                   ctx.fillStyle = '#ffffff';
+                }
+             } else {
+               ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+             }
+             ctx.fillRect(x, y, 1, 1);
+          }
+        }
       }
 
-      simulate4SQR(rawPayload, 'statsRaw4Sqr', 'rawQrCanvas');
-      simulate4SQR(compressedPayload, 'statsComp4Sqr', 'compQrCanvas');
+      // qrcode.js counts string.length for Byte mode. Since Thai characters are multi-byte,
+      // we must convert to UTF-8 to accurately represent uncompressed byte size.
+      function toUTF8(str) {
+          try { return unescape(encodeURIComponent(str)); }
+          catch(e) { return str; }
+      }
+      
+      const utf8RawPayload = toUTF8(rawPayload);
+      draw4SQR(utf8RawPayload, 'statsRaw4Sqr', 'rawQrCanvas');
+      draw4SQR(compressedPayload, 'statsComp4Sqr', 'compQrCanvas');
     };
-    
-    generateQrBtn.addEventListener("click", generateQrCode);
+    hiddenGenerateBtn.addEventListener("click", window.generateQrCode);
+
+    document.getElementById('convertBtn').addEventListener('click', () => {
+      const text = document.getElementById('uiInputText').value;
+      if (!text) {
+        alert("กรุณาป้อนข้อความก่อนครับ");
+        return;
+      }
+      
+      hiddenInput.value = text;
+      hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+      
+      document.getElementById('runBtn').click();
+      
+      let attempts = 0;
+      const checkInterval = setInterval(() => {
+        attempts++;
+        if (lastBestResult || attempts > 100) { // Timeout after 5s
+          clearInterval(checkInterval);
+          if (lastBestResult) {
+             hiddenGenerateBtn.click();
+          }
+        }
+      }, 50);
+    });
 
     document.getElementById('decodeBtn').addEventListener('click', () => {
       const resDiv = document.getElementById('decodeResult');
       resDiv.style.display = 'block';
-      const comparisonResult = getComparisonCompressedResult();
-      if (!comparisonResult) return;
       
-      // simplified decode since we just compressed it
-      resDiv.innerHTML = '<strong style="color:var(--good)">✅ ข้อมูลที่ได้จากการสแกน 4SQR และคลายบีบอัด:</strong><br><br>' + inputText.value.replace(/\n/g, '<br>');
+      if (!window.is4SQRGenerated) {
+        document.getElementById('decodedText').innerHTML = '<span style="color:#ef4444">⚠️ กรุณาแปลงข้อความก่อนครับ</span>';
+        return;
+      }
+      
+      document.getElementById('decodedText').innerHTML = hiddenInput.value.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     });
   </script>
 </body>
