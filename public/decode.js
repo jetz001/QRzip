@@ -448,7 +448,7 @@ async function decodeQrzipPayload(payload, apiGet = null) {
     }
     return { kind: "free_tunstall", payload, text: out, meta: `free | tunstall (${codeBits}b/codeword, ${codebook.length} codes)` };
   }
-  throw new Error("unsupported_payload");
+  return { kind: "raw", payload, text: payload, meta: "raw string" };
 }
 export {
   arithmeticDecode,
