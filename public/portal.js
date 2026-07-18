@@ -228,18 +228,28 @@ async function initHomePage() {
         $("#scanPreview").src = preview;
       if ($("#scanPreview"))
         $("#scanPreview").style.display = "block";
-      if ($("#decode-input"))
-        $("#decode-input").value = payload;
+      if (payload.startsWith("QZ")) {
+        if ($("#decode-input"))
+          $("#decode-input").value = payload;
+      } else {
+        if ($("#decode-input"))
+          $("#decode-input").value = "";
+      }
       console.log("[QR Scanner] Decoded raw payload:", payload);
       const decoded = await decodeQrzipPayload(payload, apiGet);
-      setText("#scanStatus", `\u0E2A\u0E41\u0E01\u0E19\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 | ${decoded.meta}`);
+      setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
       setText("#decode-result", decoded.text);
-      setText("#scanFreeHint", payload.startsWith("QZ1|") ? "\u0E43\u0E0A\u0E48, \u0E2D\u0E31\u0E19\u0E19\u0E35\u0E49\u0E40\u0E1B\u0E47\u0E19 QR \u0E41\u0E1A\u0E1A\u0E1F\u0E23\u0E35 (self-contained)" : "\u0E2D\u0E31\u0E19\u0E19\u0E35\u0E49\u0E40\u0E1B\u0E47\u0E19 QR \u0E41\u0E1A\u0E1A\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01/ref");
+      setText("#scanFreeHint", payload.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
       (_a2 = $("#result-scan")) == null ? void 0 : _a2.classList.remove("hidden");
     } catch (error) {
       console.error(error);
-      setText("#scanStatus", "\u0E2A\u0E41\u0E01\u0E19\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08: " + error.message);
-      setText("#decode-result", "");
+      setText("#scanStatus", "สแกนไม่สำเร็จ: " + error.message);
+      const payload = error.payload;
+      if (payload && !payload.startsWith("QZ")) {
+        setText("#decode-result", payload);
+      } else {
+        setText("#decode-result", "");
+      }
       setText("#scanFreeHint", "");
     }
   }
@@ -489,13 +499,21 @@ async function initHomePage() {
         stopCamera();
         try {
           const decoded = await decodeQrzipPayload(decodedText, apiGet);
-          setText("#scanStatus", `\u0E2A\u0E41\u0E01\u0E19\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 | ${decoded.meta}`);
-          setText("#decode-input", decodedText);
+          setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
+          if (decodedText.startsWith("QZ")) {
+            setText("#decode-input", decodedText);
+          } else {
+            setText("#decode-input", "");
+          }
           setText("#decode-result", decoded.text);
-          setText("#scanFreeHint", decodedText.startsWith("QZ1|") ? "\u0E43\u0E0A\u0E48, \u0E2D\u0E31\u0E19\u0E19\u0E35\u0E49\u0E40\u0E1B\u0E47\u0E19 QR \u0E41\u0E1A\u0E1A\u0E1F\u0E23\u0E35 (self-contained)" : "\u0E2D\u0E31\u0E19\u0E19\u0E35\u0E49\u0E40\u0E1B\u0E47\u0E19 QR \u0E41\u0E1A\u0E1A\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01/ref");
+          setText("#scanFreeHint", decodedText.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
         } catch (e) {
-          setText("#scanStatus", "\u0E2A\u0E41\u0E01\u0E19\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08: " + e.message);
-          setText("#decode-input", decodedText);
+          setText("#scanStatus", "สแกนไม่สำเร็จ: " + e.message);
+          if (decodedText && !decodedText.startsWith("QZ")) {
+            setText("#decode-result", decodedText);
+          } else {
+            setText("#decode-input", decodedText);
+          }
         }
       };
       try {
