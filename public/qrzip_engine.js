@@ -232,7 +232,17 @@ const DICT_PROFILES = [
       " there ",
       " their ",
       " would ",
-      " could "
+      " could ",
+      " it ",
+      " on ",
+      " as ",
+      " at ",
+      " by ",
+      " or ",
+      " an ",
+      " so ",
+      " if ",
+      " some "
     ]
   },
   {
