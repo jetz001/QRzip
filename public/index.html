@@ -327,8 +327,22 @@
     <div class="nav-badge" style="cursor: pointer; background: rgba(246, 195, 67, 0.1); color: #f6c343; border-color: rgba(246, 195, 67, 0.3); position: relative;" onclick="navigator.clipboard.writeText('D8QcXwSdCwXiqvU7x4jeYBHnJVze7a5yxb'); alert('Copied Dogecoin Address!');" title="Click to copy" onmouseover="document.getElementById('dogeQrTooltip').style.display='block'" onmouseout="document.getElementById('dogeQrTooltip').style.display='none'">
       🐕 Donate Doge
       <div id="dogeQrTooltip" style="display: none; position: absolute; top: 120%; left: 50%; transform: translateX(-50%); background: #fff; padding: 8px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; pointer-events: none;">
-        <img src="/assets/doge_qr.jpg" alt="Doge QR" style="width: 180px; height: 180px; display: block; border-radius: 4px;" />
+        <div id="dogeQrCodeRaw"></div>
       </div>
+      <script>
+        document.addEventListener("DOMContentLoaded", function() {
+          setTimeout(() => {
+            new QRCode(document.getElementById("dogeQrCodeRaw"), {
+              text: "D8QcXwSdCwXiqvU7x4jeYBHnJVze7a5yxb",
+              width: 180,
+              height: 180,
+              colorDark : "#000000",
+              colorLight : "#ffffff",
+              correctLevel : QRCode.CorrectLevel.M
+            });
+          }, 500);
+        });
+      </script>
     </div>
     <button id="memberRegisterBtnNav" class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem;">Sign Up</button>
     <button id="memberProfileBtn" class="btn-primary" style="padding: 6px 14px; font-size: 0.8rem; display:none;">Profile</button>
