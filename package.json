@@ -1,7 +1,10 @@
 {
-  "name": "qrzip",
+  "name": "qrzip-cli",
   "version": "1.0.0",
   "description": "QRzip Cloudflare Pages Project",
+  "bin": {
+    "qrzip": "./bin/qrzip-cli.js"
+  },
   "scripts": {
     "dev": "wrangler pages dev public",
     "deploy": "wrangler pages deploy public",
@@ -11,5 +14,13 @@
   },
   "devDependencies": {
     "wrangler": "^3.0.0"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "jsqr": "^1.4.0",
+    "pako": "^3.0.1",
+    "pngjs": "^7.0.0",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0"
   }
 }

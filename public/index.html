@@ -18,20 +18,20 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:        #ffffff;
-      --bg2:       #f4f7ff;
+      --bg:        #fafcff;
+      --bg2:       #f1f5f9;
       --bg3:       #ffffff;
-      --accent1:   #4f46e5;
+      --accent1:   #6366f1;
       --accent2:   #06b6d4;
       --accent3:   #ec4899;
       --text:      #0f172a;
       --text2:     #334155;
       --muted:     #64748b;
-      --border:    rgba(79,70,229,.15);
-      --glass-bg:  rgba(255,255,255,.8);
-      --glass-bdr: rgba(79,70,229,.12);
-      --shadow:    0 10px 40px rgba(79,70,229,.08);
-      --shadow-lg: 0 20px 60px rgba(79,70,229,.16);
+      --border:    rgba(99,102,241,.15);
+      --glass-bg:  rgba(255,255,255,.75);
+      --glass-bdr: rgba(255,255,255,.6);
+      --shadow:    0 12px 40px rgba(99,102,241,.06);
+      --shadow-lg: 0 24px 60px rgba(99,102,241,.12);
       --radius:    24px;
       --radius-sm: 14px;
     }
@@ -71,13 +71,13 @@
     .hero {
       min-height: 100vh; display: grid; grid-template-columns: 1.05fr 0.95fr;
       align-items: center; gap: 40px;
-      padding: 140px 5vw 80px; position: relative; overflow: hidden;
+      padding: 80px 5vw 80px; position: relative; overflow: hidden;
       max-width: 1280px; margin: 0 auto;
     }
     .hero-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
     .hero-bg::before, .hero-bg::after { content: ''; position: absolute; border-radius: 50%; filter: blur(140px); animation: drift 14s ease-in-out infinite alternate; }
-    .hero-bg::before { width: 700px; height: 700px; background: radial-gradient(circle, rgba(79,70,229,.15) 0%, transparent 70%); top: -150px; left: -150px; }
-    .hero-bg::after  { width: 600px; height: 600px; background: radial-gradient(circle, rgba(6,182,212,.12) 0%, transparent 70%); bottom: -100px; right: -100px; animation-delay: -7s; }
+    .hero-bg::before { width: 800px; height: 800px; background: radial-gradient(circle, rgba(99,102,241,.15) 0%, transparent 70%); top: -200px; left: -150px; }
+    .hero-bg::after  { width: 700px; height: 700px; background: radial-gradient(circle, rgba(6,182,212,.15) 0%, transparent 70%); bottom: -150px; right: -100px; animation-delay: -7s; }
 
     .hero-left { position: relative; z-index: 1; }
     .hero-right { position: relative; z-index: 1; display: flex; justify-content: center; align-items: center; }
@@ -106,9 +106,10 @@
 
     /* ── DEMO CARD (Hero Right) ── */
     .demo-card {
-      background: white; border-radius: var(--radius);
-      box-shadow: var(--shadow-lg); border: 1px solid var(--glass-bdr);
-      padding: 32px; animation: fadeUp .8s .4s ease both;
+      background: var(--glass-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border-radius: var(--radius); border: 1px solid var(--glass-bdr);
+      box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(255,255,255,0.5);
+      padding: 36px; animation: fadeUp .8s .4s ease both;
       position: relative; width: 100%; max-width: 480px; z-index: 2;
     }
     .demo-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
@@ -128,7 +129,7 @@
       padding: 16px; background: var(--bg2); color: var(--text);
       transition: border-color .2s, box-shadow .2s, background .2s; outline: none;
     }
-    textarea#qr-input:focus, textarea#decode-input:focus { border-color: var(--accent1); background: white; box-shadow: 0 0 0 4px rgba(79,70,229,.1); }
+    textarea#qr-input:focus, textarea#decode-input:focus { border-color: var(--accent1); background: white; box-shadow: 0 0 0 4px rgba(99,102,241,.15); }
     textarea#qr-input::placeholder, textarea#decode-input::placeholder { color: var(--muted); }
     .input-actions { display:flex; gap: 12px; margin-top: 10px; }
     .input-actions .btn-secondary { flex: 1; padding: 10px 14px; font-size: .85rem; }
@@ -148,11 +149,11 @@
       width: 100%; font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 800;
       color: white; background: linear-gradient(135deg, var(--accent1), var(--accent2));
       border: none; border-radius: 50px; padding: 16px 24px; cursor: pointer;
-      box-shadow: 0 6px 24px rgba(79,70,229,.35);
-      transition: transform .2s, box-shadow .2s; margin-top: 8px;
+      box-shadow: 0 8px 24px rgba(99,102,241,.3);
+      transition: all .3s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 8px;
     }
-    .generate-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(79,70,229,.45); }
-    .generate-btn:active { transform: translateY(0); }
+    .generate-btn:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 12px 32px rgba(99,102,241,.45); }
+    .generate-btn:active { transform: translateY(0) scale(1); }
 
     .mode-toggle { display: flex; background: var(--bg2); border-radius: 50px; padding: 4px; gap: 4px; }
     .mode-toggle button {
@@ -252,10 +253,10 @@
       font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 800; color: white;
       background: linear-gradient(135deg, var(--accent1), var(--accent2));
       border: none; border-radius: 50px; padding: 18px 48px; cursor: pointer;
-      box-shadow: 0 6px 24px rgba(79,70,229,.35); transition: transform .2s, box-shadow .2s; text-decoration: none;
+      box-shadow: 0 8px 24px rgba(99,102,241,.3); transition: all .3s cubic-bezier(0.4, 0, 0.2, 1); text-decoration: none;
     }
-    .btn-primary:hover { transform: translateY(-4px); box-shadow: 0 12px 36px rgba(79,70,229,.45); }
-    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 14px 36px rgba(99,102,241,.45); }
+    .btn-primary:active { transform: translateY(0) scale(1); }
 
     /* ── FOOTER ── */
     footer { background: white; border-top: 1px solid var(--glass-bdr); padding: 48px 5vw; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
@@ -266,6 +267,22 @@
     .footer-links a:hover { color: var(--accent1); }
 
     /* ── RESPONSIVE ── */
+    
+    /* ── CLI PROMO ── */
+    .cli-intro { margin-top: 32px; animation: fadeUp .8s .75s ease both; }
+    .cli-title { font-size: 0.9rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent1); margin-bottom: 6px; }
+    .cli-desc { font-size: 0.95rem; color: var(--text2); margin-bottom: 12px; line-height: 1.6; max-width: 400px; }
+    .cli-promo {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: #0f172a; color: #e2e8f0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.95rem; padding: 12px 20px; border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(15,23,42,0.15); border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer; transition: all 0.2s; animation: fadeUp .8s .8s ease both;
+    }
+    .cli-promo:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(15,23,42,0.25); border-color: rgba(255,255,255,0.2); }
+    .cli-promo .prompt { color: #10b981; font-weight: 700; }
+    .cli-promo .copy-hint { font-size: 0.75rem; color: #64748b; font-family: 'Outfit', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 12px; padding-left: 12px; border-left: 1px solid rgba(255,255,255,0.1); opacity: 0; transition: opacity 0.2s; }
+    .cli-promo:hover .copy-hint { opacity: 1; }
 
     /* ── MODALS ── */
     .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:200; align-items:center; justify-content:center; }
@@ -371,6 +388,15 @@
         <div class="pill"><span class="pill-icon">⚡</span> Up to 80% smaller</div>
         <div class="pill"><span class="pill-icon">🔒</span> 100% Client-side</div>
         <div class="pill"><span class="pill-icon">🌏</span> Thai &amp; EN</div>
+      </div>
+      
+      <div class="cli-intro">
+        <div class="cli-title">👨‍💻 For Developers</div>
+        <div class="cli-desc">Encode, decode, and generate QR payloads directly from your terminal. Built for automation and CI/CD.</div>
+      </div>
+      <div class="cli-promo" onclick="navigator.clipboard.writeText('npm i -g qrzip-cli'); alert('CLI command copied to clipboard!');" title="Click to copy">
+        <span class="prompt">$</span> npm i -g qrzip-cli
+        <span class="copy-hint">Click to copy</span>
       </div>
     </div>
 
