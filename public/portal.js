@@ -158,7 +158,7 @@ function loadMember() {
 }
 function memberBadgeText(member) {
   if (!member)
-    return "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E40\u0E1B\u0E47\u0E19\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01";
+    return "Not a member yet";
   return `${member.name} (${member.plan})`;
 }
 function parseRef(value) {
