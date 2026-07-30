@@ -294,6 +294,14 @@ async function decodeQrzipPayload(payload, apiGet = null) {
     const data = await apiGet(`/api/get/${encodeURIComponent(rid)}`);
     return { kind: "member_ref", payload, text: data.text || "", meta: `member ref | ${rid}` };
   }
+  const urlPrefix = "https://qrzip.online/?d=";
+  if (payload.startsWith(urlPrefix)) {
+    const rid = payload.slice(urlPrefix.length);
+    if (!apiGet)
+      throw new Error("apiGet required for reference payloads");
+    const data = await apiGet(`/api/get/${encodeURIComponent(rid)}`);
+    return { kind: "member_ref", payload, text: data.text || "", meta: `member ref | ${rid}` };
+  }
   const globalDictDecodeBytes = window.dictDecodeBytes;
   const globalParseInlineDictBlob = window.parseInlineDictBlob;
   const globalInlineDictDecodeBytes = window.inlineDictDecodeBytes;

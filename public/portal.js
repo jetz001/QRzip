@@ -1,4 +1,4 @@
-import { decodeQrzipPayload } from "./decode.js?v=ui1101a78";
+import { decodeQrzipPayload } from "./decode.js?v=ui1101a84";
 const $ = (selector) => document.querySelector(selector);
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -380,7 +380,7 @@ async function initHomePage() {
           memberId: currentMember.id,
           mode: "member"
         });
-        const ref = `QZR|${data.id}`;
+        const ref = `https://qrzip.online/?d=${data.id}`;
         const ok2 = renderQr($("#qr-canvas"), ref);
         renderQr($("#qr-canvas-raw"), text, 180, false);
         const finalBytes2 = utf8Bytes(ref);
@@ -1005,8 +1005,20 @@ function initProfileModal() {
 document.addEventListener("DOMContentLoaded", () => {
   initProfileModal();
   const page = document.body.dataset.page;
-  if (page === "home")
+  if (page === "home") {
     initHomePage();
+    const params = new URLSearchParams(window.location.search);
+    const dParam = params.get('d');
+    if (dParam) {
+      setTimeout(() => {
+        if (typeof window.setMode === 'function') window.setMode('decode');
+        const dInput = $("#decode-input");
+        if (dInput) dInput.value = `https://qrzip.online/?d=${dParam}`;
+        const mBtn = $("#manualDecodeBtn");
+        if (mBtn) mBtn.click();
+      }, 300);
+    }
+  }
   if (page === "signup")
     initSignupPage();
   if (page === "member")
