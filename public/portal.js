@@ -969,19 +969,22 @@ async function openMemberProfile() {
       document.getElementById("qrPreviewModal").style.display = "flex";
       renderQr(container, payload, 220, false);
     };
-    renderRows("#profileHistoryTable", items, (item) => `
+    renderRows("#profileHistoryTable", items, (item) => {
+      const finalPayload = item.mode === "member" ? `https://qrzip.online/?d=${item.id}` : (item.payload || "");
+      return `
       <tr>
         <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2);">${item.created_at || item.createdAt || "-"}</td>
         <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2);"><span style="background:var(--primary); color:#fff; padding:2px 8px; border-radius:12px; font-size:12px;">${item.mode || "member"}</span></td>
         <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2); max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-          <div><strong>Text:</strong> ${(item.text || "").slice(0, 50)}</div>
-          <div style="font-size:12px; color:var(--text-muted); font-family:monospace; margin-top:4px;">${item.payload}</div>
+          <div title="${escapeHtml(item.text)}"><strong>Text:</strong> ${escapeHtml(item.text || "").slice(0, 50)}...</div>
+          <div style="font-size:12px; color:var(--text-muted); font-family:monospace; margin-top:4px;" title="${escapeHtml(finalPayload)}">${escapeHtml(finalPayload)}</div>
         </td>
         <td style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.2);">
-          <button class="btn primary" style="padding:6px 12px; font-size:12px;" onclick="showHistoryQr('${item.payload}')">QR</button>
+          <button class="btn primary" style="padding:6px 12px; font-size:12px;" onclick="showHistoryQr('${finalPayload}')">QR</button>
         </td>
       </tr>
-    `);
+      `;
+    });
   } catch (err) {
     console.error("Error fetching history:", err);
     $("#profileHistoryTable").innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">\u0E42\u0E2B\u0E25\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08</td></tr>`;
