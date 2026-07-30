@@ -518,7 +518,10 @@
           <div class="decode-output-box" style="margin-top: 24px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
               <div class="section-label" style="margin:0; font-size:.7rem;">Decoded Result</div>
-              <button class="btn-secondary" id="copyDecodeBtn" style="padding: 4px 12px; font-size: 0.75rem; border-radius: 8px; margin:0; display:none;" onclick="const t=document.getElementById('decode-result').innerText;if(t&&t!=='No data yet.'){navigator.clipboard.writeText(t);this.innerText='Copied!';setTimeout(()=>this.innerText='📋 Copy',2000);}">📋 Copy</button>
+              <div style="display:flex; gap:8px;">
+                <button class="btn-secondary" id="openLinkBtn" style="padding: 4px 12px; font-size: 0.75rem; border-radius: 8px; margin:0; display:none;" onclick="const t=document.getElementById('decode-result').innerText.trim();if(t&&t!=='No data yet.'){let url=t; if(!url.startsWith('http://') && !url.startsWith('https://')){url='https://'+url;} window.open(url, '_blank');}">🌐 Open Link</button>
+                <button class="btn-secondary" id="copyDecodeBtn" style="padding: 4px 12px; font-size: 0.75rem; border-radius: 8px; margin:0; display:none;" onclick="const t=document.getElementById('decode-result').innerText;if(t&&t!=='No data yet.'){navigator.clipboard.writeText(t);this.innerText='Copied!';setTimeout(()=>this.innerText='📋 Copy',2000);}">📋 Copy</button>
+              </div>
             </div>
             <div id="decode-result" style="min-height: 100px; padding: 16px; background: var(--bg2); border-radius: var(--radius-sm); border: 1px solid var(--glass-bdr); font-size: 1rem; white-space: pre-wrap; word-break: break-word; color: var(--text);">No data yet.</div>
             <div id="scanFreeHint" style="margin-top:8px; font-size:0.85rem; color:var(--muted); text-align:center;"></div>

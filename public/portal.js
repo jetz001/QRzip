@@ -175,6 +175,14 @@ function setText(selector, value) {
     } else {
       node.textContent = value;
     }
+    
+    if (selector === "#decode-result") {
+      const copyBtn = $("#copyDecodeBtn");
+      const openBtn = $("#openLinkBtn");
+      const hasData = value && !value.startsWith("Error:") && value !== "No data yet.";
+      if (copyBtn) copyBtn.style.display = hasData ? "inline-block" : "none";
+      if (openBtn) openBtn.style.display = hasData ? "inline-block" : "none";
+    }
   }
 }
 async function initHomePage() {
