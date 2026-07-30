@@ -77,10 +77,11 @@ function renderQr(container, payload, size = 220, isBinary = false) {
     qr.make();
     const count = qr.getModuleCount();
     const margin = 4;
+    const cellSize = 16;
     const canvasModules = count + margin * 2;
     const canvas = document.createElement("canvas");
-    canvas.width = canvasModules;
-    canvas.height = canvasModules;
+    canvas.width = canvasModules * cellSize;
+    canvas.height = canvasModules * cellSize;
     canvas.style.width = `${size}px`;
     canvas.style.height = `${size}px`;
     canvas.style.imageRendering = "pixelated";
@@ -89,12 +90,12 @@ function renderQr(container, payload, size = 220, isBinary = false) {
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvasModules, canvasModules);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#000000";
     for (let row = 0; row < count; row++) {
       for (let col = 0; col < count; col++) {
         if (qr.isDark(row, col)) {
-          ctx.fillRect(col + margin, row + margin, 1, 1);
+          ctx.fillRect((col + margin) * cellSize, (row + margin) * cellSize, cellSize, cellSize);
         }
       }
     }
