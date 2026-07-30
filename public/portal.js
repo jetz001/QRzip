@@ -112,7 +112,7 @@ async function apiGet(url) {
   const token = localStorage.getItem("adminToken");
   if (token)
     headers["Authorization"] = `Bearer ${token}`;
-  const response = await fetch(url, { headers });
+  const response = await fetch(url, { headers, cache: "no-store" });
   let data = null;
   try {
     data = await response.json();
