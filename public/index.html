@@ -344,8 +344,10 @@
     <div class="nav-badge">&#10022; Beta</div>
     <div class="nav-badge" style="cursor: pointer; background: rgba(246, 195, 67, 0.1); color: #f6c343; border-color: rgba(246, 195, 67, 0.3); position: relative;" onclick="navigator.clipboard.writeText('D8QcXwSdCwXiqvU7x4jeYBHnJVze7a5yxb'); alert('Copied Dogecoin Address!');" title="Click to copy" onmouseover="document.getElementById('dogeQrTooltip').style.display='block'" onmouseout="document.getElementById('dogeQrTooltip').style.display='none'">
       🐕 Donate Doge
-      <div id="dogeQrTooltip" style="display: none; position: absolute; top: 120%; left: 50%; transform: translateX(-50%); background: #fff; padding: 8px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; pointer-events: none;">
-        <div id="dogeQrCodeRaw"></div>
+      <div id="dogeQrTooltip" style="display: none; position: absolute; top: 120%; left: 50%; transform: translateX(-50%); background: #fff; padding: 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; pointer-events: none; text-align: center; color: var(--text); width: max-content;">
+        <div style="font-size: 0.85rem; font-weight: 800; margin-bottom: 8px; color: #f6c343; text-transform: none;">Dogecoin (DOGE)</div>
+        <div id="dogeQrCodeRaw" style="display:flex; justify-content:center; margin-bottom: 8px;"></div>
+        <div style="font-family: monospace; font-size: 0.75rem; background: var(--bg2); padding: 6px; border-radius: 4px; border: 1px solid var(--glass-bdr); color: var(--text2); letter-spacing: 0;">D8QcXwSdCwXiqvU7x4jeYBHnJVze7a5yxb</div>
       </div>
       <script>
         document.addEventListener("DOMContentLoaded", function() {
