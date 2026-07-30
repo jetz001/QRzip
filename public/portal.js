@@ -381,7 +381,7 @@ async function initHomePage() {
           mode: "member"
         });
         const ref = `https://qrzip.online/?d=${data.id}`;
-        const ok2 = renderQr($("#qr-canvas"), ref);
+        const ok2 = renderQr($("#qr-canvas"), ref, 180, false);
         renderQr($("#qr-canvas-raw"), text, 180, false);
         const finalBytes2 = utf8Bytes(ref);
         setText("#stat-compressed", finalBytes2.toLocaleString());
