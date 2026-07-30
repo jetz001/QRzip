@@ -1013,9 +1013,19 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => {
         if (typeof window.setMode === 'function') window.setMode('decode');
         const dInput = $("#decode-input");
-        if (dInput) dInput.value = `https://qrzip.online/?d=${dParam}`;
-        const mBtn = $("#manualDecodeBtn");
-        if (mBtn) mBtn.click();
+        const payload = `https://qrzip.online/?d=${dParam}`;
+        if (dInput) dInput.value = payload;
+        
+        decodeQrzipPayload(payload, apiGet).then(decoded => {
+          const txt = decoded.text.trim();
+          if (txt.startsWith("http://") || txt.startsWith("https://")) {
+            window.location.href = txt;
+          } else {
+            setText("#decode-result", decoded.text);
+          }
+        }).catch(e => {
+          setText("#decode-result", "Error: " + e.message);
+        });
       }, 300);
     }
   }
