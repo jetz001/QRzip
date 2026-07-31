@@ -628,39 +628,41 @@ async function initHomePage() {
       const onScanSuccess = async (decodedText) => {
         stopCamera();
         try {
-          let finalPayload = decodedText;
-          const isPasswordChecked = $("#decodePasswordCheck")?.checked;
-          if (isPasswordChecked || finalPayload.startsWith("QZP|")) {
+          let decoded = await decodeQrzipPayload(decodedText, apiGet);
+          if (decoded.text.startsWith("QZP|")) {
             const pass = $("#decodePasswordInput")?.value;
-            if (!pass) {
+            const isPasswordChecked = $("#decodePasswordCheck")?.checked;
+            if (!pass || !isPasswordChecked) {
               setText("#scanStatus", "ต้องการรหัสผ่าน กรุณาใส่รหัสผ่านแล้วกด Decode Text");
-              if (decodedText.startsWith("QZ")) setText("#decode-input", decodedText);
+              if (decodedText.startsWith("QZ") || decodedText.startsWith("http")) setText("#decode-input", decodedText);
               setText("#decode-result", "🔒 ข้อมูลถูกเข้ารหัส กรุณาติ๊กช่อง Password และใส่รหัสผ่านเพื่อถอดรหัส");
               const cb = $("#decodePasswordCheck");
-              if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+              if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
               $("#decodePasswordInput")?.focus();
               return;
             }
-            const encryptedBase64 = finalPayload.startsWith("QZP|") ? finalPayload.substring(4) : finalPayload;
+            const encryptedBase64 = decoded.text.substring(4);
             const decryptedString = await decryptData(encryptedBase64, pass);
             if (!decryptedString) {
               setText("#scanStatus", "รหัสผ่านผิด หรือข้อมูลเสียหาย");
               return;
             }
-            finalPayload = decryptedString;
+            decoded = await decodeQrzipPayload(decryptedString, apiGet);
           }
-          const decoded = await decodeQrzipPayload(finalPayload, apiGet);
+          
           setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
-          if (decodedText.startsWith("QZ")) {
+          if (decodedText.startsWith("QZ") || decodedText.startsWith("http")) {
             setText("#decode-input", decodedText);
           } else {
             setText("#decode-input", "");
           }
           setText("#decode-result", decoded.text);
           setText("#scanFreeHint", decodedText.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
+          const resScan = $("#result-scan");
+          if (resScan) resScan.classList.remove("hidden");
         } catch (e) {
           setText("#scanStatus", "สแกนไม่สำเร็จ: " + e.message);
-          if (decodedText && !decodedText.startsWith("QZ")) {
+          if (decodedText && !decodedText.startsWith("QZ") && !decodedText.startsWith("http")) {
             setText("#decode-result", decodedText);
           } else {
             setText("#decode-input", decodedText);
