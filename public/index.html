@@ -416,24 +416,18 @@
 
         <div id="view-encode">
 
-          <div style="display:flex; gap:12px; margin-bottom:16px; background:var(--bg2); padding:6px; border-radius:12px; border:1px solid var(--glass-bdr); flex-wrap: wrap;">
-            <label style="flex:1; cursor:pointer; padding:8px 12px; border-radius:8px; display:flex; align-items:center; gap:8px; transition:all 0.2s;" id="labelModeOffline" class="mode-label active">
-              <input type="radio" name="createMode" value="offline" checked style="accent-color:var(--accent1); width:16px; height:16px;" onchange="toggleCreateMode(this.value)">
-              <div style="display:flex; flex-direction:column;">
-                <span style="font-weight:700; font-size:14px; color:var(--text); white-space:nowrap;">QR ZIP/RAW</span>
-              </div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:6px; margin-bottom:16px; background:var(--bg2); padding:6px; border-radius:12px; border:1px solid var(--glass-bdr);">
+            <label style="cursor:pointer; padding:10px 6px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; color:var(--muted);" id="labelModeOffline" class="mode-label active">
+              <input type="radio" name="createMode" value="offline" checked style="display:none;" onchange="toggleCreateMode(this.value)">
+              <span style="font-weight:700; font-size:13px; white-space:nowrap; pointer-events:none;">⚡ QR ZIP/RAW</span>
             </label>
-            <label style="flex:1; cursor:pointer; padding:8px 12px; border-radius:8px; display:flex; align-items:center; gap:8px; transition:all 0.2s;" id="labelModeMember" class="mode-label">
-              <input type="radio" name="createMode" value="member" style="accent-color:var(--accent2); width:16px; height:16px;" onchange="toggleCreateMode(this.value)">
-              <div style="display:flex; flex-direction:column;">
-                <span style="font-weight:700; font-size:14px; color:var(--text); white-space:nowrap;">Short QR (Cloud)</span>
-              </div>
+            <label style="cursor:pointer; padding:10px 6px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; color:var(--muted);" id="labelModeMember" class="mode-label">
+              <input type="radio" name="createMode" value="member" style="display:none;" onchange="toggleCreateMode(this.value)">
+              <span style="font-weight:700; font-size:13px; white-space:nowrap; pointer-events:none;">☁️ Short QR (Cloud)</span>
             </label>
-            <label style="flex:1; cursor:pointer; padding:8px 12px; border-radius:8px; display:flex; align-items:center; gap:8px; transition:all 0.2s;" id="labelModePassword" class="mode-label">
-              <input type="radio" name="createMode" value="password" style="accent-color:#eab308; width:16px; height:16px;" onchange="toggleCreateMode(this.value)">
-              <div style="display:flex; flex-direction:column;">
-                <span style="font-weight:700; font-size:14px; color:var(--text); white-space:nowrap;">QR Password</span>
-              </div>
+            <label style="cursor:pointer; padding:10px 6px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; color:var(--muted);" id="labelModePassword" class="mode-label">
+              <input type="radio" name="createMode" value="password" style="display:none;" onchange="toggleCreateMode(this.value)">
+              <span style="font-weight:700; font-size:13px; white-space:nowrap; pointer-events:none;">🔒 QR Password</span>
             </label>
           </div>
           
