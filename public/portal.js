@@ -102,12 +102,12 @@ function renderQr(container, payload, size = 220, isBinary = false) {
     
     if (payload.startsWith("QZP|")) {
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, canvas.height - (cellSize * 6), canvas.width, cellSize * 6);
+      ctx.fillRect(0, canvas.height - (margin * cellSize), canvas.width, margin * cellSize);
       ctx.fillStyle = "#eab308";
-      ctx.font = `bold ${cellSize * 4}px sans-serif`;
+      ctx.font = `bold ${cellSize * 2.5}px sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("PASSWORD", canvas.width / 2, canvas.height - (cellSize * 3));
+      ctx.fillText("PASSWORD", canvas.width / 2, canvas.height - (margin * cellSize / 2));
     }
     
     container.appendChild(canvas);
@@ -289,7 +289,11 @@ async function initHomePage() {
         const pass = $("#decodePasswordInput")?.value;
         if (!pass) {
           setText("#scanStatus", "ต้องการรหัสผ่าน กรุณาใส่รหัสผ่านแล้วกด Decode Text");
-          setText("#decode-result", "");
+          setText("#decode-result", "🔒 ข้อมูลถูกเข้ารหัส กรุณาติ๊กช่อง Password และใส่รหัสผ่านเพื่อถอดรหัส");
+          // Auto-check the checkbox and show input
+          const cb = $("#decodePasswordCheck");
+          if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+          $("#decodePasswordInput")?.focus();
           return;
         }
         const encryptedBase64 = finalPayload.startsWith("QZP|") ? finalPayload.substring(4) : finalPayload;
@@ -619,6 +623,10 @@ async function initHomePage() {
             if (!pass) {
               setText("#scanStatus", "ต้องการรหัสผ่าน กรุณาใส่รหัสผ่านแล้วกด Decode Text");
               if (decodedText.startsWith("QZ")) setText("#decode-input", decodedText);
+              setText("#decode-result", "🔒 ข้อมูลถูกเข้ารหัส กรุณาติ๊กช่อง Password และใส่รหัสผ่านเพื่อถอดรหัส");
+              const cb = $("#decodePasswordCheck");
+              if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+              $("#decodePasswordInput")?.focus();
               return;
             }
             const encryptedBase64 = finalPayload.startsWith("QZP|") ? finalPayload.substring(4) : finalPayload;
