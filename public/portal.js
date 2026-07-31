@@ -283,30 +283,28 @@ async function initHomePage() {
         if ($("#decode-input"))
           $("#decode-input").value = "";
       }
-      let finalPayload = payload;
-      const isPasswordChecked = $("#decodePasswordCheck")?.checked;
-      if (isPasswordChecked || finalPayload.startsWith("QZP|")) {
+      let decoded = await decodeQrzipPayload(payload, apiGet);
+      if (decoded.text.startsWith("QZP|")) {
         const pass = $("#decodePasswordInput")?.value;
-        if (!pass) {
+        const isPasswordChecked = $("#decodePasswordCheck")?.checked;
+        if (!pass || !isPasswordChecked) {
           setText("#scanStatus", "ต้องการรหัสผ่าน กรุณาใส่รหัสผ่านแล้วกด Decode Text");
           setText("#decode-result", "🔒 ข้อมูลถูกเข้ารหัส กรุณาติ๊กช่อง Password และใส่รหัสผ่านเพื่อถอดรหัส");
-          // Auto-check the checkbox and show input
           const cb = $("#decodePasswordCheck");
-          if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+          if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
           $("#decodePasswordInput")?.focus();
           return;
         }
-        const encryptedBase64 = finalPayload.startsWith("QZP|") ? finalPayload.substring(4) : finalPayload;
+        const encryptedBase64 = decoded.text.substring(4);
         const decryptedString = await decryptData(encryptedBase64, pass);
         if (!decryptedString) {
           setText("#scanStatus", "รหัสผ่านผิด หรือข้อมูลเสียหาย");
           setText("#decode-result", "");
           return;
         }
-        finalPayload = decryptedString;
+        decoded = await decodeQrzipPayload(decryptedString, apiGet);
       }
       
-      const decoded = await decodeQrzipPayload(finalPayload, apiGet);
       setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
       setText("#decode-result", decoded.text);
       setText("#scanFreeHint", payload.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
@@ -568,25 +566,26 @@ async function initHomePage() {
     if (!payload)
       return;
       
-    const isPasswordChecked = $("#decodePasswordCheck")?.checked;
-    if (isPasswordChecked || payload.startsWith("QZP|")) {
-      const pass = $("#decodePasswordInput")?.value;
-      if (!pass) {
-        setText("#decode-result", "Error: กรุณาใส่รหัสผ่าน");
-        return;
-      }
-      
-      const encryptedBase64 = payload.startsWith("QZP|") ? payload.substring(4) : payload;
-      const decryptedString = await decryptData(encryptedBase64, pass);
-      if (!decryptedString) {
-        setText("#decode-result", "Error: รหัสผ่านผิด หรือข้อมูลเสียหาย");
-        return;
-      }
-      payload = decryptedString;
-    }
-      
     try {
-      const decoded = await decodeQrzipPayload(payload, apiGet);
+      let decoded = await decodeQrzipPayload(payload, apiGet);
+      if (decoded.text.startsWith("QZP|")) {
+        const pass = $("#decodePasswordInput")?.value;
+        const isPasswordChecked = $("#decodePasswordCheck")?.checked;
+        if (!pass || !isPasswordChecked) {
+          setText("#decode-result", "🔒 ข้อมูลถูกเข้ารหัส กรุณาติ๊กช่อง Password และใส่รหัสผ่านเพื่อถอดรหัส");
+          const cb = $("#decodePasswordCheck");
+          if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+          $("#decodePasswordInput")?.focus();
+          return;
+        }
+        const encryptedBase64 = decoded.text.substring(4);
+        const decryptedString = await decryptData(encryptedBase64, pass);
+        if (!decryptedString) {
+          setText("#decode-result", "Error: รหัสผ่านผิด หรือข้อมูลเสียหาย");
+          return;
+        }
+        decoded = await decodeQrzipPayload(decryptedString, apiGet);
+      }
       setText("#decode-result", decoded.text);
     } catch (e) {
       setText("#decode-result", "Error: " + e.message);

@@ -10,8 +10,8 @@ export async function onRequestPost(context) {
     
     if (rateLimitMap.has(ip)) {
       const lastReq = rateLimitMap.get(ip);
-      if (nowMs - lastReq < 5000) {
-        return jsonResponse({ error: "rate_limit", detail: "Please wait 5 seconds before creating another QR Code." }, 429);
+      if (nowMs - lastReq < 1500) {
+        return jsonResponse({ error: "rate_limit", detail: "Please wait 1.5 seconds before creating another QR Code." }, 429);
       }
     }
     rateLimitMap.set(ip, nowMs);
