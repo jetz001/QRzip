@@ -437,10 +437,6 @@
             </label>
           </div>
           
-          <div id="encodePasswordContainer" style="display:none; margin-bottom:12px;">
-            <input type="text" id="encodePasswordInput" placeholder="Enter password to encrypt QR code..." style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid var(--glass-bdr); background:var(--bg2); color:var(--text); font-family:inherit; font-size:14px;" />
-          </div>
-
           <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
             <div class="algo-badge">
               <span class="algo-dot"></span>
@@ -452,6 +448,10 @@
           <div class="input-actions" style="justify-content: flex-end;">
             <button id="pasteInputBtn" class="btn-secondary" type="button" title="วางข้อความ" style="flex: 0 0 auto; width: 42px; padding: 10px 0;">📋</button>
             <button id="clearInputBtn" class="btn-secondary" type="button" title="ล้างข้อความ" style="flex: 0 0 auto; width: 42px; padding: 10px 0;">🗑️</button>
+          </div>
+
+          <div id="encodePasswordContainer" style="display:none; margin-bottom:16px;">
+            <input type="text" id="encodePasswordInput" placeholder="Type password here" style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid var(--glass-bdr); background:var(--bg2); color:var(--text); font-family:inherit; font-size:14px;" />
           </div>
 
           <div class="stat-row">
@@ -513,7 +513,7 @@
                 <input type="checkbox" id="decodePasswordCheck" style="accent-color:var(--primary); width:16px; height:16px;" onchange="document.getElementById('decodePasswordInput').style.display = this.checked ? 'block' : 'none';">
                 <strong>Password (AES-GCM)</strong>
               </label>
-              <input type="text" id="decodePasswordInput" placeholder="Enter password to decrypt..." style="display:none; width:100%; padding:10px 14px; margin-top:8px; border-radius:8px; border:1px solid var(--glass-bdr); background:var(--bg2); color:var(--text); font-family:inherit; font-size:14px;" />
+              <input type="text" id="decodePasswordInput" placeholder="Type password here" style="display:none; width:100%; padding:10px 14px; margin-top:8px; border-radius:8px; border:1px solid var(--glass-bdr); background:var(--bg2); color:var(--text); font-family:inherit; font-size:14px;" />
             </div>
           </div>
           
