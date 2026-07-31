@@ -327,26 +327,18 @@ async function initHomePage() {
     var _a2;
     $("#labelModeOffline").classList.remove("active");
     $("#labelModeMember").classList.remove("active");
-    if ($("#labelModePassword")) $("#labelModePassword").classList.remove("active");
     
     if (mode === "offline") {
       $("#labelModeOffline").classList.add("active");
-    } else if (mode === "password") {
-      if ($("#labelModePassword")) $("#labelModePassword").classList.add("active");
     } else {
       const currentMember = loadMember();
       if (!currentMember) {
         document.querySelector('input[name="createMode"][value="offline"]').checked = true;
         alert("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E01\u0E48\u0E2D\u0E19\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E42\u0E2B\u0E21\u0E14\u0E19\u0E35\u0E49");
         $("#labelModeOffline").classList.add("active");
-        if ($("#encodePasswordContainer")) $("#encodePasswordContainer").style.display = "none";
         return;
       }
       $("#labelModeMember").classList.add("active");
-    }
-    
-    if ($("#encodePasswordContainer")) {
-      $("#encodePasswordContainer").style.display = (mode === "password") ? "block" : "none";
     }
     
     (_a2 = $("#result-create")) == null ? void 0 : _a2.classList.add("hidden");
@@ -439,18 +431,40 @@ async function initHomePage() {
     const mode = modeNode ? modeNode.value : "offline";
     const origBytes = utf8Bytes(text);
     setText("#stat-original", origBytes.toLocaleString());
+    const isPassword = $("#encodePasswordCheck")?.checked;
+    const pass = $("#encodePasswordInput")?.value;
+
     if (mode === "member") {
       const currentMember = loadMember();
       if (!currentMember) {
         alert("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E01\u0E48\u0E2D\u0E19\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E42\u0E2B\u0E21\u0E14\u0E19\u0E35\u0E49");
         return;
       }
+      
+      let payloadToUpload = text;
+      let uploadMode = "member";
+      
+      if (isPassword) {
+        if (!pass) {
+          alert("กรุณาใส่รหัสผ่าน");
+          return;
+        }
+        try {
+          const encryptedBase64 = await encryptData(text, pass);
+          payloadToUpload = "QZP|" + encryptedBase64;
+          uploadMode = "password";
+        } catch (e) {
+          alert("เข้ารหัสไม่สำเร็จ");
+          return;
+        }
+      }
+
       try {
         const data = await apiPost("/api/store", {
-          text,
+          text: payloadToUpload,
           payload: "",
           memberId: currentMember.id,
-          mode: "member"
+          mode: uploadMode
         });
         const ref = `https://qrzip.online/?d=${data.id}`;
         const ok2 = renderQr($("#qr-canvas"), ref, 180, false);
@@ -459,8 +473,8 @@ async function initHomePage() {
         setText("#stat-compressed", finalBytes2.toLocaleString());
         const savedPercent = origBytes > finalBytes2 ? Math.round((origBytes - finalBytes2) / origBytes * 100) : 0;
         setText("#stat-saving", savedPercent + "%");
-        setText("#algo-name-badge", "Cloud Storage");
-        setText("#algo-name-text", "Cloud Storage (Ref ID)");
+        setText("#algo-name-badge", isPassword ? "Cloud+Pass" : "Cloud Storage");
+        setText("#algo-name-text", isPassword ? "Cloud Storage (Encrypted)" : "Cloud Storage (Ref ID)");
         $("#algo-row").style.display = "flex";
         if (dlBtn)
           dlBtn.classList.add("visible");
@@ -495,8 +509,7 @@ async function initHomePage() {
       modelName = "Base64 (Fallback)";
     }
     
-    if (mode === "password") {
-      const pass = $("#encodePasswordInput")?.value;
+    if (isPassword) {
       if (!pass) {
         alert("กรุณาใส่รหัสผ่าน");
         return;
