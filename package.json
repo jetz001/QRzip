@@ -1,6 +1,6 @@
 {
   "name": "qrzip-cli",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "QRzip Cloudflare Pages Project",
   "bin": {
     "qrzip": "./bin/qrzip-cli.js"
