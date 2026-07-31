@@ -174,7 +174,35 @@ function setText(selector, value) {
     if (node.tagName === "TEXTAREA" || node.tagName === "INPUT") {
       node.value = value;
     } else {
-      node.textContent = value;
+      if (selector === "#decode-result" && typeof value === 'string' && value.toUpperCase().startsWith("WIFI:")) {
+        try {
+          const raw = value.substring(5);
+          const parts = raw.split(';');
+          const wifi = { S: '', T: '', P: '', H: '' };
+          for (const p of parts) {
+            if (!p) continue;
+            const idx = p.indexOf(':');
+            if (idx > -1) {
+              const key = p.substring(0, idx).toUpperCase();
+              const val = p.substring(idx + 1);
+              if (wifi[key] !== undefined) wifi[key] = val;
+            }
+          }
+          node.innerHTML = `
+            <div style="font-family:sans-serif;">
+              <div style="font-weight:bold; font-size:1.1rem; margin-bottom:12px; color:var(--primary);">📶 Wi-Fi Network</div>
+              <div style="margin-bottom:8px;"><strong>SSID:</strong> <code style="background:rgba(128,128,128,0.15); padding:2px 6px; border-radius:4px;">${escapeHtml(wifi.S || '-')}</code></div>
+              <div style="margin-bottom:8px;"><strong>Password:</strong> <code style="background:rgba(128,128,128,0.15); padding:2px 6px; border-radius:4px;">${escapeHtml(wifi.P || '-')}</code></div>
+              <div style="margin-bottom:4px; font-size:0.85rem; color:var(--muted);"><strong>Type:</strong> ${escapeHtml(wifi.T || 'Open')}</div>
+              ${wifi.H === 'true' ? '<div style="font-size:0.85rem; color:var(--muted);">(Hidden Network)</div>' : ''}
+            </div>
+          `;
+        } catch (e) {
+          node.textContent = value;
+        }
+      } else {
+        node.textContent = value;
+      }
     }
     
     if (selector === "#decode-result") {
