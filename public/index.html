@@ -517,13 +517,19 @@
             </div>
           </div>
           
-          <div class="decode-actions" style="display:flex; gap: 12px; margin-top: 16px;">
-            <label class="btn-secondary" style="flex: 1; text-align:center; cursor:pointer;">
-              📷 Upload Image
-              <input type="file" id="scanQrFile" accept="image/*" style="display:none;" />
-            </label>
-            <button id="cameraScanBtn" class="btn-secondary" style="flex: 1; margin-top:0;">🎥 Scan Camera</button>
-            <button id="manualDecodeBtn" class="generate-btn" style="flex: 1; margin-top:0;">🔓 Decode Text</button>
+          <div class="decode-actions" style="display:flex; flex-direction:column; gap: 12px; margin-top: 16px;">
+            <div style="display:flex; gap: 12px;">
+              <label class="btn-secondary" style="flex: 1; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; padding: 14px 12px; margin: 0;">
+                <span style="font-size:1.2rem;">📷</span> <span style="white-space:nowrap;">Upload Image</span>
+                <input type="file" id="scanQrFile" accept="image/*" style="display:none;" />
+              </label>
+              <button id="cameraScanBtn" class="btn-secondary" style="flex: 1; display:flex; align-items:center; justify-content:center; gap:8px; margin: 0; padding: 14px 12px;">
+                <span style="font-size:1.2rem;">🎥</span> <span style="white-space:nowrap;">Scan Camera</span>
+              </button>
+            </div>
+            <button id="manualDecodeBtn" class="generate-btn" style="width: 100%; margin: 0; display:flex; align-items:center; justify-content:center; gap:8px; padding: 16px;">
+              <span style="font-size:1.2rem;">🔓</span> <span>Decode Text</span>
+            </button>
           </div>
           
           <div id="qr-reader" style="display:none;"></div>
