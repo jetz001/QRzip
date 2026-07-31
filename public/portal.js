@@ -99,6 +99,17 @@ function renderQr(container, payload, size = 220, isBinary = false) {
         }
       }
     }
+    
+    if (payload.startsWith("QZP|")) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, canvas.height - (cellSize * 6), canvas.width, cellSize * 6);
+      ctx.fillStyle = "#eab308";
+      ctx.font = `bold ${cellSize * 4}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("PASSWORD", canvas.width / 2, canvas.height - (cellSize * 3));
+    }
+    
     container.appendChild(canvas);
     return true;
   } catch (err) {
@@ -272,8 +283,26 @@ async function initHomePage() {
         if ($("#decode-input"))
           $("#decode-input").value = "";
       }
-      console.log("[QR Scanner] Decoded raw payload:", payload);
-      const decoded = await decodeQrzipPayload(payload, apiGet);
+      let finalPayload = payload;
+      const isPasswordChecked = $("#decodePasswordCheck")?.checked;
+      if (isPasswordChecked || finalPayload.startsWith("QZP|")) {
+        const pass = $("#decodePasswordInput")?.value;
+        if (!pass) {
+          setText("#scanStatus", "ต้องการรหัสผ่าน กรุณาใส่รหัสผ่านแล้วกด Decode Text");
+          setText("#decode-result", "");
+          return;
+        }
+        const encryptedBase64 = finalPayload.startsWith("QZP|") ? finalPayload.substring(4) : finalPayload;
+        const decryptedString = await decryptData(encryptedBase64, pass);
+        if (!decryptedString) {
+          setText("#scanStatus", "รหัสผ่านผิด หรือข้อมูลเสียหาย");
+          setText("#decode-result", "");
+          return;
+        }
+        finalPayload = decryptedString;
+      }
+      
+      const decoded = await decodeQrzipPayload(finalPayload, apiGet);
       setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
       setText("#decode-result", decoded.text);
       setText("#scanFreeHint", payload.startsWith("QZ1|") ? "ใช่, อันนี้เป็น QR แบบฟรี (self-contained)" : "อันนี้เป็น QR แบบสมาชิก/ref");
@@ -292,19 +321,30 @@ async function initHomePage() {
   }
   window.toggleCreateMode = function(mode) {
     var _a2;
+    $("#labelModeOffline").classList.remove("active");
+    $("#labelModeMember").classList.remove("active");
+    if ($("#labelModePassword")) $("#labelModePassword").classList.remove("active");
+    
     if (mode === "offline") {
       $("#labelModeOffline").classList.add("active");
-      $("#labelModeMember").classList.remove("active");
+    } else if (mode === "password") {
+      if ($("#labelModePassword")) $("#labelModePassword").classList.add("active");
     } else {
       const currentMember = loadMember();
       if (!currentMember) {
         document.querySelector('input[name="createMode"][value="offline"]').checked = true;
         alert("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E01\u0E48\u0E2D\u0E19\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E42\u0E2B\u0E21\u0E14\u0E19\u0E35\u0E49");
+        $("#labelModeOffline").classList.add("active");
+        if ($("#encodePasswordContainer")) $("#encodePasswordContainer").style.display = "none";
         return;
       }
-      $("#labelModeOffline").classList.remove("active");
       $("#labelModeMember").classList.add("active");
     }
+    
+    if ($("#encodePasswordContainer")) {
+      $("#encodePasswordContainer").style.display = (mode === "password") ? "block" : "none";
+    }
+    
     (_a2 = $("#result-create")) == null ? void 0 : _a2.classList.add("hidden");
   };
 
@@ -450,6 +490,25 @@ async function initHomePage() {
       savedBytes = utf8Bytes(text) - finalBytes;
       modelName = "Base64 (Fallback)";
     }
+    
+    if (mode === "password") {
+      const pass = $("#encodePasswordInput")?.value;
+      if (!pass) {
+        alert("กรุณาใส่รหัสผ่าน");
+        return;
+      }
+      try {
+        const encryptedBase64 = await encryptData(payload, pass);
+        payload = "QZP|" + encryptedBase64;
+        finalBytes = utf8Bytes(payload);
+        savedBytes = utf8Bytes(text) - finalBytes;
+        modelName = "AES-GCM (" + modelName.split(" ")[0] + ")";
+      } catch (e) {
+        alert("เข้ารหัสไม่สำเร็จ");
+        return;
+      }
+    }
+
     const ok = renderQr($("#qr-canvas"), payload, 180, true);
     renderQr($("#qr-canvas-raw"), text, 180, false);
     if (ok) {
@@ -488,9 +547,27 @@ async function initHomePage() {
   });
   (_c = $("#manualDecodeBtn")) == null ? void 0 : _c.addEventListener("click", async () => {
     var _a2, _b2;
-    const payload = ((_b2 = (_a2 = $("#decode-input")) == null ? void 0 : _a2.value) == null ? void 0 : _b2.trim()) || "";
+    let payload = ((_b2 = (_a2 = $("#decode-input")) == null ? void 0 : _a2.value) == null ? void 0 : _b2.trim()) || "";
     if (!payload)
       return;
+      
+    const isPasswordChecked = $("#decodePasswordCheck")?.checked;
+    if (isPasswordChecked || payload.startsWith("QZP|")) {
+      const pass = $("#decodePasswordInput")?.value;
+      if (!pass) {
+        setText("#decode-result", "Error: กรุณาใส่รหัสผ่าน");
+        return;
+      }
+      
+      const encryptedBase64 = payload.startsWith("QZP|") ? payload.substring(4) : payload;
+      const decryptedString = await decryptData(encryptedBase64, pass);
+      if (!decryptedString) {
+        setText("#decode-result", "Error: รหัสผ่านผิด หรือข้อมูลเสียหาย");
+        return;
+      }
+      payload = decryptedString;
+    }
+      
     try {
       const decoded = await decodeQrzipPayload(payload, apiGet);
       setText("#decode-result", decoded.text);
@@ -535,7 +612,24 @@ async function initHomePage() {
       const onScanSuccess = async (decodedText) => {
         stopCamera();
         try {
-          const decoded = await decodeQrzipPayload(decodedText, apiGet);
+          let finalPayload = decodedText;
+          const isPasswordChecked = $("#decodePasswordCheck")?.checked;
+          if (isPasswordChecked || finalPayload.startsWith("QZP|")) {
+            const pass = $("#decodePasswordInput")?.value;
+            if (!pass) {
+              setText("#scanStatus", "ต้องการรหัสผ่าน กรุณาใส่รหัสผ่านแล้วกด Decode Text");
+              if (decodedText.startsWith("QZ")) setText("#decode-input", decodedText);
+              return;
+            }
+            const encryptedBase64 = finalPayload.startsWith("QZP|") ? finalPayload.substring(4) : finalPayload;
+            const decryptedString = await decryptData(encryptedBase64, pass);
+            if (!decryptedString) {
+              setText("#scanStatus", "รหัสผ่านผิด หรือข้อมูลเสียหาย");
+              return;
+            }
+            finalPayload = decryptedString;
+          }
+          const decoded = await decodeQrzipPayload(finalPayload, apiGet);
           setText("#scanStatus", `สแกนสำเร็จ | ${decoded.meta}`);
           if (decodedText.startsWith("QZ")) {
             setText("#decode-input", decodedText);

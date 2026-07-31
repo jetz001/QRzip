@@ -416,19 +416,29 @@
 
         <div id="view-encode">
 
-          <div style="display:flex; gap:12px; margin-bottom:16px; background:var(--bg2); padding:6px; border-radius:12px; border:1px solid var(--glass-bdr);">
+          <div style="display:flex; gap:12px; margin-bottom:16px; background:var(--bg2); padding:6px; border-radius:12px; border:1px solid var(--glass-bdr); flex-wrap: wrap;">
             <label style="flex:1; cursor:pointer; padding:8px 12px; border-radius:8px; display:flex; align-items:center; gap:8px; transition:all 0.2s;" id="labelModeOffline" class="mode-label active">
               <input type="radio" name="createMode" value="offline" checked style="accent-color:var(--accent1); width:16px; height:16px;" onchange="toggleCreateMode(this.value)">
               <div style="display:flex; flex-direction:column;">
-                <span style="font-weight:700; font-size:14px; color:var(--text);">QR ZIP/RAW</span>
+                <span style="font-weight:700; font-size:14px; color:var(--text); white-space:nowrap;">QR ZIP/RAW</span>
               </div>
             </label>
             <label style="flex:1; cursor:pointer; padding:8px 12px; border-radius:8px; display:flex; align-items:center; gap:8px; transition:all 0.2s;" id="labelModeMember" class="mode-label">
               <input type="radio" name="createMode" value="member" style="accent-color:var(--accent2); width:16px; height:16px;" onchange="toggleCreateMode(this.value)">
               <div style="display:flex; flex-direction:column;">
-                <span style="font-weight:700; font-size:14px; color:var(--text);">Short QR (Cloud)</span>
+                <span style="font-weight:700; font-size:14px; color:var(--text); white-space:nowrap;">Short QR (Cloud)</span>
               </div>
             </label>
+            <label style="flex:1; cursor:pointer; padding:8px 12px; border-radius:8px; display:flex; align-items:center; gap:8px; transition:all 0.2s;" id="labelModePassword" class="mode-label">
+              <input type="radio" name="createMode" value="password" style="accent-color:#eab308; width:16px; height:16px;" onchange="toggleCreateMode(this.value)">
+              <div style="display:flex; flex-direction:column;">
+                <span style="font-weight:700; font-size:14px; color:var(--text); white-space:nowrap;">QR Password</span>
+              </div>
+            </label>
+          </div>
+          
+          <div id="encodePasswordContainer" style="display:none; margin-bottom:12px;">
+            <input type="text" id="encodePasswordInput" placeholder="Enter password to encrypt QR code..." style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid var(--glass-bdr); background:var(--bg2); color:var(--text); font-family:inherit; font-size:14px;" />
           </div>
 
           <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
@@ -495,7 +505,17 @@
         </div>
 
         <div id="view-decode" style="display:none;">
-          <textarea id="decode-input" placeholder="Paste QZ1 payload here (e.g. QZ1:L:...)"></textarea>
+          <div style="position:relative;">
+            <textarea id="decode-input" placeholder="Paste QZ1 payload here (e.g. QZ1:L:...)"></textarea>
+            
+            <div style="margin-top:12px; margin-bottom:16px;">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px; color:var(--text);">
+                <input type="checkbox" id="decodePasswordCheck" style="accent-color:var(--primary); width:16px; height:16px;" onchange="document.getElementById('decodePasswordInput').style.display = this.checked ? 'block' : 'none';">
+                <strong>Password (AES-GCM)</strong>
+              </label>
+              <input type="text" id="decodePasswordInput" placeholder="Enter password to decrypt..." style="display:none; width:100%; padding:10px 14px; margin-top:8px; border-radius:8px; border:1px solid var(--glass-bdr); background:var(--bg2); color:var(--text); font-family:inherit; font-size:14px;" />
+            </div>
+          </div>
           
           <div class="decode-actions" style="display:flex; gap: 12px; margin-top: 16px;">
             <label class="btn-secondary" style="flex: 1; text-align:center; cursor:pointer;">
@@ -776,7 +796,7 @@ function downloadQR(type = 'compressed') {
 </script>
 
 <!-- Main Logic -->
-<script src="./qrzip_engine.js?v=ui1101a81"></script>
-<script src="./portal.js?v=ui1101a89" type="module"></script>
+<script src="./qrzip_engine.js?v=ui1101a90"></script>
+<script src="./portal.js?v=ui1101a90" type="module"></script>
 </body>
 </html>
