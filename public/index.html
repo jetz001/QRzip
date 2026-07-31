@@ -646,8 +646,8 @@
 
       <h3 style="color: var(--text); margin-bottom: 12px;">Advanced Commands & Password Support</h3>
       <ul style="color: var(--muted); font-size: 0.9rem; line-height: 1.8; padding-left: 20px;">
-        <li><code style="background: rgba(128,128,128,0.15); padding: 2px 6px; border-radius: 4px; color: var(--text);">qrzip encode "text" -p "secret"</code> &mdash; <strong>Encrypt the payload</strong> using AES-GCM with a password.</li>
-        <li><code style="background: rgba(128,128,128,0.15); padding: 2px 6px; border-radius: 4px; color: var(--text);">qrzip decode "QZP|..." -p "secret"</code> &mdash; <strong>Decrypt a password-protected payload</strong>.</li>
+        <li><code style="background: rgba(128,128,128,0.15); padding: 2px 6px; border-radius: 4px; color: var(--text);">qrzip encode "text" -p "password"</code> &mdash; <strong>Encrypt the payload</strong> using AES-GCM with a password.</li>
+        <li><code style="background: rgba(128,128,128,0.15); padding: 2px 6px; border-radius: 4px; color: var(--text);">qrzip decode "QZP|..." -p "password"</code> &mdash; <strong>Decrypt a password-protected payload</strong>.</li>
         <li><code style="background: rgba(128,128,128,0.15); padding: 2px 6px; border-radius: 4px; color: var(--text);">qrzip encode "text" --output image.png</code> &mdash; Encode and save as a PNG image directly.</li>
         <li><code style="background: rgba(128,128,128,0.15); padding: 2px 6px; border-radius: 4px; color: var(--text);">qrzip decode scan.png</code> &mdash; Read and decode a QR code from an image file.</li>
         <li><code style="background: rgba(128,128,128,0.15); padding: 2px 6px; border-radius: 4px; color: var(--text);">qrzip --help</code> &mdash; Show all available commands and flags.</li>
