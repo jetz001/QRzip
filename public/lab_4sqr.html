@@ -223,45 +223,6 @@
         `ประหยัดพื้นที่: <b>${(100 - comparisonResult.ratio).toFixed(1)}%</b>`;
       
       function draw4SQR(payloadStr, elemId, canvasId) {
-        let stdQr = null, stdDim = 0;
-        try { 
-          stdQr = qrcode(0, 'M'); 
-          stdQr.addData(payloadStr, 'Byte'); 
-          stdQr.make(); 
-          stdDim = stdQr.getModuleCount(); 
-        } catch(e) {}
-        
-        if (!stdDim) return;
-        const standardModules = stdDim * stdDim;
-        
-        let halfPayload = payloadStr.substring(0, Math.max(1, Math.ceil(payloadStr.length / 2)));
-        let fourQr = null, fourDim = 0;
-        try { 
-          fourQr = qrcode(0, 'M'); 
-          fourQr.addData(halfPayload, 'Byte'); 
-          fourQr.make(); 
-          fourDim = fourQr.getModuleCount(); 
-        } catch(e) {}
-        
-        if (!fourDim) return;
-        const fourStateModules = fourDim * fourDim;
-        
-        document.getElementById(elemId).innerHTML = `ความจุ 4SQR: ${fourStateModules} จุด`;
-        
-        const canvas = document.getElementById(canvasId);
-        const ctx = canvas.getContext('2d');
-        
-        // Calculate an integer scale for crisp pixels (target size ~180px)
-        const scale = Math.max(1, Math.floor(180 / fourDim));
-        const actualSize = fourDim * scale;
-        
-        canvas.width = actualSize;
-        canvas.height = actualSize;
-        canvas.style.width = actualSize + 'px';
-        canvas.style.height = actualSize + 'px';
-        
-        const colors = ['#ffffff', '#000000', '#ef4444', '#3b82f6']; // White(0), Black(1), Red(2), Blue(3)
-        
         function toUTF8Local(str) {
             try { return unescape(encodeURIComponent(str)); }
             catch(e) { return str; }
@@ -277,6 +238,39 @@
             base4Data.push((b >> 6) & 3, (b >> 4) & 3, (b >> 2) & 3, b & 3);
         }
         base4Data.push(0, 0); // Terminator
+        
+        // Calculate dynamic optimal dimension (minimum 15x15)
+        let reqCap = base4Data.length;
+        let fourDim = 15;
+        while (true) {
+            let cap = 0;
+            for(let y=0; y<fourDim; y++) {
+                for(let x=0; x<fourDim; x++) {
+                    if ((x < 7 && y < 7) || (x >= fourDim - 7 && y < 7) || (x < 7 && y >= fourDim - 7)) continue;
+                    if (x === 6 || y === 6) continue;
+                    cap++;
+                }
+            }
+            if (cap >= reqCap) break;
+            fourDim += 2; // Keep odd
+        }
+        
+        const fourStateModules = fourDim * fourDim;
+        document.getElementById(elemId).innerHTML = `ความจุ 4SQR: ${fourStateModules} จุด`;
+        
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        
+        // Calculate an integer scale for crisp pixels (target size ~180px)
+        const scale = Math.max(1, Math.floor(180 / fourDim));
+        const actualSize = fourDim * scale;
+        
+        canvas.width = actualSize;
+        canvas.height = actualSize;
+        canvas.style.width = actualSize + 'px';
+        canvas.style.height = actualSize + 'px';
+        
+        const colors = ['#ffffff', '#000000', '#ef4444', '#3b82f6']; // White(0), Black(1), Red(2), Blue(3)
         
         // 2. Zig-Zag Mapping
         let matrix = Array(fourDim).fill(0).map(() => Array(fourDim).fill(-1));
