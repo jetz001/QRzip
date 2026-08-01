@@ -250,10 +250,15 @@
         
         const canvas = document.getElementById(canvasId);
         const ctx = canvas.getContext('2d');
-        canvas.width = fourDim;
-        canvas.height = fourDim;
-        canvas.style.width = '180px';
-        canvas.style.height = '180px';
+        
+        // Calculate an integer scale for crisp pixels (target size ~180px)
+        const scale = Math.max(1, Math.floor(180 / fourDim));
+        const actualSize = fourDim * scale;
+        
+        canvas.width = actualSize;
+        canvas.height = actualSize;
+        canvas.style.width = actualSize + 'px';
+        canvas.style.height = actualSize + 'px';
         
         const colors = ['#ffffff', '#000000', '#ef4444', '#3b82f6']; // White(0), Black(1), Red(2), Blue(3)
         
@@ -332,7 +337,7 @@
                if (val === -1 || val === -2) val = 0;
                ctx.fillStyle = colors[val];
              }
-             ctx.fillRect(x, y, 1, 1);
+             ctx.fillRect(x * scale, y * scale, scale, scale);
           }
         }
       }
