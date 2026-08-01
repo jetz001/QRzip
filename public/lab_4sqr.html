@@ -294,15 +294,28 @@
         let cy = fourDim - 1;
         let dir = -1; // -1 for up, 1 for down
         let dataIndex = 0;
+        let padIndex = 0;
+        const padding = [3, 2, 3, 0, 0, 1, 0, 1]; // Base-4 equivalent of QR padding bytes 236 and 17
         
         while (cx > 0) {
             if (cx === 6) cx--; // skip vertical timing pattern
             
             while (cy >= 0 && cy < fourDim) {
+                // skip horizontal timing pattern
+                if (cy === 6) {
+                    cy += dir;
+                    continue;
+                }
+                
                 for (let c = 0; c < 2; c++) {
                     let px = cx - c;
                     if (matrix[cy][px] === -1) {
-                        matrix[cy][px] = (dataIndex < base4Data.length) ? base4Data[dataIndex++] : 0;
+                        if (dataIndex < base4Data.length) {
+                            matrix[cy][px] = base4Data[dataIndex++];
+                        } else {
+                            matrix[cy][px] = padding[padIndex % padding.length];
+                            padIndex++;
+                        }
                     }
                 }
                 cy += dir;
@@ -310,6 +323,12 @@
             dir = -dir;
             cy += dir; // step back into bounds
             cx -= 2;
+        }
+
+        // Add timing patterns (row 6 and col 6)
+        for (let i = 8; i < fourDim - 8; i++) {
+            matrix[6][i] = (i % 2 === 0) ? 1 : 0; // horizontal
+            matrix[i][6] = (i % 2 === 0) ? 1 : 0; // vertical
         }
 
         // 3. Draw
