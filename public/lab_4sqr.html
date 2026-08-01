@@ -255,7 +255,59 @@
         canvas.style.width = '180px';
         canvas.style.height = '180px';
         
-        const colors = ['#ffffff', '#000000', '#ef4444', '#3b82f6'];
+        const colors = ['#ffffff', '#000000', '#ef4444', '#3b82f6']; // White(0), Black(1), Red(2), Blue(3)
+        
+        function toUTF8Local(str) {
+            try { return unescape(encodeURIComponent(str)); }
+            catch(e) { return str; }
+        }
+        const utf8Str = toUTF8Local(payloadStr);
+        
+        // 1. Convert to Base-4 Array
+        let base4Data = [1, 0]; // Byte mode (0100 binary -> 10 base4)
+        let len = utf8Str.length;
+        base4Data.push((len >> 6) & 3, (len >> 4) & 3, (len >> 2) & 3, len & 3); // Length
+        for(let i=0; i<utf8Str.length; i++) {
+            let b = utf8Str.charCodeAt(i);
+            base4Data.push((b >> 6) & 3, (b >> 4) & 3, (b >> 2) & 3, b & 3);
+        }
+        base4Data.push(0, 0); // Terminator
+        
+        // 2. Zig-Zag Mapping
+        let matrix = Array(fourDim).fill(0).map(() => Array(fourDim).fill(-1));
+        
+        // Mark finder patterns
+        for(let y=0; y<fourDim; y++) {
+          for(let x=0; x<fourDim; x++) {
+             if ((x < 7 && y < 7) || (x >= fourDim - 7 && y < 7) || (x < 7 && y >= fourDim - 7)) {
+                matrix[y][x] = -2; // reserved for finder
+             }
+          }
+        }
+        
+        let cx = fourDim - 1;
+        let cy = fourDim - 1;
+        let dir = -1; // -1 for up, 1 for down
+        let dataIndex = 0;
+        
+        while (cx > 0) {
+            if (cx === 6) cx--; // skip vertical timing pattern
+            
+            while (cy >= 0 && cy < fourDim) {
+                for (let c = 0; c < 2; c++) {
+                    let px = cx - c;
+                    if (matrix[cy][px] === -1) {
+                        matrix[cy][px] = (dataIndex < base4Data.length) ? base4Data[dataIndex++] : 0;
+                    }
+                }
+                cy += dir;
+            }
+            dir = -dir;
+            cy += dir; // step back into bounds
+            cx -= 2;
+        }
+
+        // 3. Draw
         for(let y=0; y<fourDim; y++) {
           for(let x=0; x<fourDim; x++) {
              let isFinder = false;
@@ -276,7 +328,9 @@
                    ctx.fillStyle = '#ffffff';
                 }
              } else {
-               ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+               let val = matrix[y][x];
+               if (val === -1 || val === -2) val = 0;
+               ctx.fillStyle = colors[val];
              }
              ctx.fillRect(x, y, 1, 1);
           }
